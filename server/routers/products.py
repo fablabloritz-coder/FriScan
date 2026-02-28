@@ -32,6 +32,7 @@ def _enrich_response(product: ProductDB) -> ProductResponse:
 def list_products(
     in_fridge: Optional[bool] = Query(None, description="Filtrer par présence dans le frigo"),
     expiring_soon: Optional[int] = Query(None, description="Jours avant péremption (alerte)"),
+    expired: Optional[bool] = Query(None, description="Filtrer les produits expirés"),
     search: Optional[str] = Query(None, description="Recherche par nom"),
     db: Session = Depends(get_db),
 ):
@@ -44,7 +45,15 @@ def list_products(
     if search:
         query = query.filter(ProductDB.name.ilike(f"%{search}%"))
 
-    if expiring_soon is not None:
+    if expired:
+        query = query.filter(
+            and_(
+                ProductDB.expiry_date.isnot(None),
+                ProductDB.expiry_date < date.today(),
+                ProductDB.is_in_fridge == True,
+            )
+        )
+    elif expiring_soon is not None:
         limit_date = date.today()
         from datetime import timedelta
         end_date = limit_date + timedelta(days=expiring_soon)
@@ -82,6 +91,7 @@ def create_product(product_data: ProductCreate, db: Session = Depends(get_db)):
         nutriscore=product_data.nutriscore,
         expiry_date=product_data.expiry_date,
         amount=product_data.amount,
+        notes=product_data.notes,
         added_at=datetime.utcnow(),
         is_in_fridge=True,
     )
@@ -163,7 +173,7 @@ def fridge_summary(db: Session = Depends(get_db)):
     ).count()
 
     return {
-        "total_products": total,
+        "total": total,
         "expired": expired,
-        "expiring_in_3_days": expiring_3d,
+        "expiring_soon": expiring_3d,
     }

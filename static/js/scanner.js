@@ -1,132 +1,89 @@
-/**
- * FriScan — Module Scanner Webcam
- * Capture d'images via la webcam et envoi au serveur pour décodage.
- */
+﻿// =====================================
+// FriScan - Scanner Camera v2.0
+// Multi-camera + Flash + Auto-scan
+// =====================================
 
-let cameraStream = null;
+let stream = null;
+let autoScanInterval = null;
+let cameraDevices = [];
+let currentDeviceId = null;
+let flashEnabled = false;
+
+// Enumerate cameras
+async function enumerateCameras() {
+    try {
+        // Need a temporary stream to get labels
+        const tmpStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        tmpStream.getTracks().forEach(t => t.stop());
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        cameraDevices = devices.filter(d => d.kind === 'videoinput');
+        const select = document.getElementById('camera-select');
+        if (!select) return;
+        select.innerHTML = '';
+        cameraDevices.forEach((d, i) => {
+            const opt = document.createElement('option');
+            opt.value = d.deviceId;
+            opt.textContent = d.label || ('Camera ' + (i + 1));
+            select.appendChild(opt);
+        });
+        if (cameraDevices.length > 0) {
+            currentDeviceId = cameraDevices[cameraDevices.length - 1].deviceId;
+            select.value = currentDeviceId;
+        }
+        select.addEventListener('change', () => {
+            currentDeviceId = select.value;
+            if (stream) { stopCamera(); startCamera(); }
+        });
+    } catch (e) {
+        console.error('Camera enum error:', e);
+    }
+}
 
 async function startCamera() {
-    const video = document.getElementById('scanner-video');
-    const overlay = document.getElementById('scanner-overlay');
-    const btnStart = document.getElementById('btn-start-cam');
-    const btnCapture = document.getElementById('btn-capture');
-    const btnStop = document.getElementById('btn-stop-cam');
-
     try {
-        // Demander l'accès à la caméra
-        cameraStream = await navigator.mediaDevices.getUserMedia({
+        const constraints = {
             video: {
-                facingMode: 'environment', // caméra arrière si dispo
+                deviceId: currentDeviceId ? { exact: currentDeviceId } : undefined,
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
+                facingMode: currentDeviceId ? undefined : 'environment'
             }
-        });
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const video = document.getElementById('scanner-video');
+        video.srcObject = stream;
 
-        video.srcObject = cameraStream;
-        overlay.style.display = 'block';
+        document.getElementById('video-container').classList.remove('hidden');
+        document.querySelector('.scanner-overlay').style.display = 'block';
+        document.getElementById('btn-start-cam').classList.add('hidden');
+        document.getElementById('btn-stop-cam').classList.remove('hidden');
 
-        btnStart.disabled = true;
-        btnCapture.disabled = false;
-        btnStop.disabled = false;
-
-        notify('Caméra activée. Placez le code-barres devant la caméra.', 'info');
-
-        // Lancer la détection automatique toutes les 1.5s
         startAutoScan();
-
-    } catch (err) {
-        console.error('Erreur caméra:', err);
-        if (err.name === 'NotAllowedError') {
-            notify('Accès à la caméra refusé. Vérifiez les permissions du navigateur.', 'error');
-        } else if (err.name === 'NotFoundError') {
-            notify('Aucune caméra détectée.', 'error');
-        } else {
-            notify('Erreur lors de l\'activation de la caméra.', 'error');
-        }
+    } catch (e) {
+        console.error('Camera start error:', e);
+        showNotification('Impossible d\'acceder a la camera', 'error');
     }
 }
 
 function stopCamera() {
-    const video = document.getElementById('scanner-video');
-    const overlay = document.getElementById('scanner-overlay');
-    const btnStart = document.getElementById('btn-start-cam');
-    const btnCapture = document.getElementById('btn-capture');
-    const btnStop = document.getElementById('btn-stop-cam');
-
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
     }
-
-    video.srcObject = null;
-    overlay.style.display = 'none';
-
-    btnStart.disabled = false;
-    btnCapture.disabled = true;
-    btnStop.disabled = true;
-
     stopAutoScan();
-    notify('Caméra arrêtée.', 'info');
+    document.getElementById('video-container').classList.add('hidden');
+    document.querySelector('.scanner-overlay').style.display = 'none';
+    document.getElementById('btn-start-cam').classList.remove('hidden');
+    document.getElementById('btn-stop-cam').classList.add('hidden');
+    flashEnabled = false;
 }
-
-async function captureAndScan() {
-    const video = document.getElementById('scanner-video');
-    const canvas = document.getElementById('scanner-canvas');
-
-    if (!cameraStream || video.readyState < 2) {
-        notify('La caméra n\'est pas prête.', 'warning');
-        return;
-    }
-
-    // Capturer l'image
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-
-    // Convertir en blob
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-    const formData = new FormData();
-    formData.append('file', blob, 'capture.jpg');
-
-    try {
-        const res = await fetch(`${API_BASE}/api/scanner/image`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (res.status === 422) {
-            // Pas de code-barres détecté — normal en mode auto
-            return false;
-        }
-
-        if (!res.ok) throw new Error();
-
-        const product = await res.json();
-        scannedProduct = product;
-        displayScannedProduct(product);
-        notify(`Code-barres détecté : ${product.barcode}`, 'success');
-        stopCamera(); // Arrêter après un scan réussi
-        return true;
-    } catch (e) {
-        // Silencieux en mode auto
-        return false;
-    }
-}
-
-
-// ════════════ SCAN AUTOMATIQUE ════════════
-
-let autoScanInterval = null;
 
 function startAutoScan() {
     stopAutoScan();
-    autoScanInterval = setInterval(async () => {
-        const found = await captureAndScan();
-        if (found) {
-            stopAutoScan();
-        }
-    }, 1500); // Scan toutes les 1.5 secondes
+    const settings = typeof getSettings === 'function' ? getSettings() : { scanInterval: 2 };
+    const interval = (settings.scanInterval || 2) * 1000;
+    autoScanInterval = setInterval(captureAndScan, interval);
 }
 
 function stopAutoScan() {
@@ -135,3 +92,59 @@ function stopAutoScan() {
         autoScanInterval = null;
     }
 }
+
+async function captureAndScan() {
+    const video = document.getElementById('scanner-video');
+    if (!video || !stream || video.readyState < 2) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    canvas.toBlob(async (blob) => {
+        const formData = new FormData();
+        formData.append('file', blob, 'scan.jpg');
+        try {
+            const res = await fetch('/api/scanner/decode', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.barcodes && data.barcodes.length > 0) {
+                const barcode = data.barcodes[0].data;
+                document.getElementById('barcode-input').value = barcode;
+                showNotification('Code-barres detecte: ' + barcode, 'success');
+                stopAutoScan();
+                searchBarcode();
+            }
+        } catch (e) { /* scan attempt failed silently */ }
+    }, 'image/jpeg', 0.85);
+}
+
+// Flash/Torch toggle
+async function toggleFlash() {
+    if (!stream) {
+        showNotification('Demarrez la camera d\'abord', 'warning');
+        return;
+    }
+    const track = stream.getVideoTracks()[0];
+    if (!track) return;
+    try {
+        const capabilities = track.getCapabilities();
+        if (!capabilities.torch) {
+            showNotification('Flash non supporte sur cette camera', 'warning');
+            return;
+        }
+        flashEnabled = !flashEnabled;
+        await track.applyConstraints({ advanced: [{ torch: flashEnabled }] });
+        const btn = document.getElementById('flash-btn');
+        if (btn) {
+            btn.style.background = flashEnabled ? '#f59e0b' : '';
+            btn.style.color = flashEnabled ? '#1e293b' : '';
+        }
+    } catch (e) {
+        showNotification('Erreur flash', 'error');
+    }
+}
+
+// Init cameras on load
+document.addEventListener('DOMContentLoaded', () => {
+    enumerateCameras();
+});

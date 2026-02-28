@@ -7,6 +7,36 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.0.0] — 2025-06-15
+
+### ✨ Ajouté
+
+- **Interface 100% tactile** : refonte complète CSS pour Surface Pro (min 48px touch targets)
+- **Mode plein écran** : bouton toggle fullscreen pour usage tablette
+- **Onglet Réglages** : paramétrage des jours d'alerte péremption, régimes, intervalle scan
+- **Boutons de quantité tactiles** : presets (100g, 250g, 500g, 1kg, 1L, 1 pièce) + stepper +/-
+- **Régimes alimentaires** : filtrage recettes (végétarien, vegan, sans-gluten, sans-lactose)
+- **120+ produits frais** : base étendue avec catégories Surgelés, Boissons, Boulangerie, Charcuterie
+- **35+ recettes avec tags diététiques** : chaque recette identifie ses compatibilités
+- **Multi-caméras** : sélecteur de caméra pour basculer entre webcam/USB
+- **Flash/Torche** : toggle pour scanner en conditions de faible luminosité
+- **Notes sur produits** : champ notes pour poids/format (ex: 500g, 1L)
+- **Péremption configurable** : slider 1-14 jours pour les alertes
+- **Filtres de catégorie** : onglets de catégorie dans la grille de produits rapides
+
+### 🔄 Modifié
+
+- Refonte CSS complète : variables CSS, design system cohérent
+- Tabs en mode icône + label compact pour économiser l'espace
+- Stats bar compacte dans le header
+- Grille de recettes avec tags de régime et expandable instructions
+- Moteur de recettes accepte filtrage par régime alimentaire
+- API /api/recipes/suggestions : nouveaux params `diet` et `expiry_days`
+- API /api/products : nouveau filtre `expired=true`, champ `notes`
+- Renommage champs stats API pour cohérence frontend
+
+---
+
 ## [1.0.0] — 2026-02-28
 
 ### ✨ Ajouté

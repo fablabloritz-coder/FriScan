@@ -241,6 +241,7 @@ def suggest_recipes(
     max_results: int = 10,
     min_match_ratio: float = 0.3,
     prioritize_expiring: list[str] | None = None,
+    diet_filter: list[str] | None = None,
 ) -> list[RecipeSuggestion]:
     """
     Suggère des recettes en fonction des produits du frigo.
@@ -250,6 +251,7 @@ def suggest_recipes(
         max_results: Nombre maximum de suggestions.
         min_match_ratio: Ratio minimum d'ingrédients trouvés.
         prioritize_expiring: Produits proches de la péremption (bonus de score).
+        diet_filter: Filtrer par régimes alimentaires (ex: ["vegetarien", "vegan"]).
 
     Returns:
         Liste de RecipeSuggestion triée par pertinence.
@@ -257,6 +259,12 @@ def suggest_recipes(
     recipes = load_recipes()
     if not recipes or not fridge_products:
         return []
+
+    # Filtrer par régime alimentaire
+    if diet_filter:
+        recipes = [r for r in recipes if all(
+            d in r.get("diet_tags", []) for d in diet_filter
+        )]
 
     expiring_set = set(_normalize(p) for p in (prioritize_expiring or []))
     suggestions = []
@@ -308,6 +316,7 @@ def suggest_recipes(
                 prep_time=recipe.get("prep_time"),
                 servings=recipe.get("servings"),
                 image_url=recipe.get("image_url"),
+                diet_tags=recipe.get("diet_tags", []),
             ))
 
     # Trier par score décroissant, puis par nombre d'ingrédients manquants

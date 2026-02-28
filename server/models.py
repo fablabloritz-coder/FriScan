@@ -27,6 +27,7 @@ class ProductDB(Base):
     nutriscore: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)
     expiry_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     amount: Mapped[int] = mapped_column(Integer, default=1)
+    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     added_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     is_in_fridge: Mapped[bool] = mapped_column(default=True)
 
@@ -45,6 +46,7 @@ class ProductCreate(BaseModel):
     nutriscore: Optional[str] = None
     expiry_date: Optional[date] = None
     amount: int = 1
+    notes: Optional[str] = None
 
 
 class ProductUpdate(BaseModel):
@@ -69,6 +71,7 @@ class ProductResponse(BaseModel):
     nutriscore: Optional[str] = None
     expiry_date: Optional[date] = None
     amount: int
+    notes: Optional[str] = None
     added_at: datetime
     is_in_fridge: bool
     days_until_expiry: Optional[int] = None
@@ -103,3 +106,4 @@ class RecipeSuggestion(BaseModel):
     prep_time: Optional[str] = None
     servings: Optional[int] = None
     image_url: Optional[str] = None
+    diet_tags: list[str] = []
