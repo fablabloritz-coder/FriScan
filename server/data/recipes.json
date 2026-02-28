@@ -1,0 +1,226 @@
+[
+  {
+    "name": "Omelette aux champignons",
+    "ingredients": ["œufs", "champignons", "beurre", "sel", "poivre"],
+    "instructions": "1. Battre les œufs dans un bol.\n2. Couper les champignons en lamelles.\n3. Faire fondre le beurre dans une poêle.\n4. Faire revenir les champignons 5 min.\n5. Verser les œufs battus.\n6. Cuire à feu doux 3-4 min.\n7. Plier l'omelette et servir.",
+    "prep_time": "15 min",
+    "servings": 2
+  },
+  {
+    "name": "Salade César",
+    "ingredients": ["salade", "poulet", "parmesan", "croûtons", "huile d'olive", "citron"],
+    "instructions": "1. Laver et couper la salade.\n2. Griller le poulet et le couper en tranches.\n3. Préparer la vinaigrette : huile d'olive + jus de citron.\n4. Assembler la salade, le poulet, les croûtons.\n5. Râper le parmesan par-dessus.\n6. Assaisonner avec la vinaigrette.",
+    "prep_time": "20 min",
+    "servings": 2
+  },
+  {
+    "name": "Pâtes à la carbonara",
+    "ingredients": ["pâtes", "lardons", "œufs", "parmesan", "crème fraîche", "poivre"],
+    "instructions": "1. Cuire les pâtes dans l'eau bouillante salée.\n2. Faire revenir les lardons sans matière grasse.\n3. Mélanger les œufs, le parmesan râpé et la crème.\n4. Égoutter les pâtes.\n5. Mélanger pâtes + lardons hors du feu.\n6. Ajouter le mélange œufs-parmesan.\n7. Poivrer et servir immédiatement.",
+    "prep_time": "20 min",
+    "servings": 4
+  },
+  {
+    "name": "Soupe de légumes",
+    "ingredients": ["carottes", "pommes de terre", "poireaux", "oignon", "bouillon", "sel"],
+    "instructions": "1. Éplucher et couper les légumes en morceaux.\n2. Faire revenir l'oignon dans un peu d'huile.\n3. Ajouter tous les légumes.\n4. Couvrir de bouillon.\n5. Cuire 30 min à feu moyen.\n6. Mixer et assaisonner.",
+    "prep_time": "45 min",
+    "servings": 4
+  },
+  {
+    "name": "Croque-monsieur",
+    "ingredients": ["pain de mie", "jambon", "fromage", "beurre"],
+    "instructions": "1. Beurrer les tranches de pain.\n2. Placer le jambon et le fromage entre deux tranches.\n3. Cuire à la poêle ou au four 5 min de chaque côté.\n4. Servir chaud.",
+    "prep_time": "10 min",
+    "servings": 2
+  },
+  {
+    "name": "Quiche Lorraine",
+    "ingredients": ["pâte brisée", "lardons", "œufs", "crème fraîche", "fromage", "sel", "poivre"],
+    "instructions": "1. Préchauffer le four à 180°C.\n2. Étaler la pâte dans un moule.\n3. Faire revenir les lardons.\n4. Mélanger œufs + crème + sel + poivre.\n5. Disposer les lardons sur la pâte.\n6. Verser l'appareil.\n7. Parsemer de fromage.\n8. Cuire 35 min.",
+    "prep_time": "50 min",
+    "servings": 6
+  },
+  {
+    "name": "Gratin dauphinois",
+    "ingredients": ["pommes de terre", "crème fraîche", "lait", "ail", "sel", "poivre", "fromage"],
+    "instructions": "1. Préchauffer le four à 180°C.\n2. Éplucher et couper les pommes de terre en rondelles.\n3. Frotter un plat avec l'ail.\n4. Disposer les rondelles en couches.\n5. Mélanger crème + lait + sel + poivre.\n6. Verser sur les pommes de terre.\n7. Parsemer de fromage.\n8. Cuire 1h.",
+    "prep_time": "1h15",
+    "servings": 6
+  },
+  {
+    "name": "Ratatouille",
+    "ingredients": ["courgettes", "aubergines", "tomates", "poivrons", "oignon", "ail", "huile d'olive"],
+    "instructions": "1. Couper tous les légumes en morceaux.\n2. Faire revenir l'oignon et l'ail dans l'huile.\n3. Ajouter les aubergines et poivrons, cuire 10 min.\n4. Ajouter les courgettes et tomates.\n5. Laisser mijoter 30 min à feu doux.\n6. Assaisonner et servir.",
+    "prep_time": "50 min",
+    "servings": 4
+  },
+  {
+    "name": "Salade de tomates mozzarella",
+    "ingredients": ["tomates", "mozzarella", "basilic", "huile d'olive", "sel", "poivre"],
+    "instructions": "1. Couper les tomates et la mozzarella en tranches.\n2. Alterner tomates et mozzarella dans une assiette.\n3. Parsemer de feuilles de basilic.\n4. Arroser d'huile d'olive.\n5. Saler, poivrer et servir.",
+    "prep_time": "10 min",
+    "servings": 2
+  },
+  {
+    "name": "Poulet rôti aux herbes",
+    "ingredients": ["poulet", "thym", "romarin", "ail", "beurre", "pommes de terre", "sel"],
+    "instructions": "1. Préchauffer le four à 200°C.\n2. Badigeonner le poulet de beurre.\n3. Frotter avec les herbes et l'ail.\n4. Disposer les pommes de terre autour.\n5. Enfourner 1h15.\n6. Arroser régulièrement du jus de cuisson.",
+    "prep_time": "1h30",
+    "servings": 4
+  },
+  {
+    "name": "Tarte aux pommes",
+    "ingredients": ["pâte brisée", "pommes", "sucre", "beurre", "cannelle"],
+    "instructions": "1. Préchauffer le four à 180°C.\n2. Étaler la pâte dans un moule.\n3. Éplucher et couper les pommes en lamelles.\n4. Disposer les pommes en rosace.\n5. Saupoudrer de sucre et cannelle.\n6. Ajouter des noisettes de beurre.\n7. Cuire 35 min.",
+    "prep_time": "50 min",
+    "servings": 6
+  },
+  {
+    "name": "Soupe à l'oignon",
+    "ingredients": ["oignon", "beurre", "bouillon", "pain", "fromage"],
+    "instructions": "1. Émincer les oignons finement.\n2. Les faire caraméliser dans le beurre 20 min.\n3. Ajouter le bouillon, cuire 15 min.\n4. Verser dans des bols allant au four.\n5. Déposer une tranche de pain et du fromage.\n6. Gratiner au four 5 min.",
+    "prep_time": "45 min",
+    "servings": 4
+  },
+  {
+    "name": "Wrap poulet avocat",
+    "ingredients": ["tortilla", "poulet", "avocat", "salade", "tomates", "sauce yaourt"],
+    "instructions": "1. Couper le poulet en lanières et le griller.\n2. Couper l'avocat et les tomates.\n3. Étaler la sauce yaourt sur la tortilla.\n4. Disposer salade, poulet, avocat et tomates.\n5. Rouler la tortilla serrée.\n6. Couper en deux et servir.",
+    "prep_time": "15 min",
+    "servings": 2
+  },
+  {
+    "name": "Risotto aux champignons",
+    "ingredients": ["riz", "champignons", "oignon", "bouillon", "parmesan", "beurre", "vin blanc"],
+    "instructions": "1. Faire revenir l'oignon dans le beurre.\n2. Ajouter le riz et le nacrer 2 min.\n3. Déglacer au vin blanc.\n4. Ajouter le bouillon louche par louche en remuant.\n5. À mi-cuisson, ajouter les champignons.\n6. Finir avec le parmesan râpé.\n7. Servir crémeux.",
+    "prep_time": "35 min",
+    "servings": 4
+  },
+  {
+    "name": "Galettes de légumes",
+    "ingredients": ["courgettes", "carottes", "œufs", "farine", "oignon", "sel"],
+    "instructions": "1. Râper les courgettes et carottes.\n2. Bien les essorer.\n3. Mélanger avec l'oignon émincé, les œufs et la farine.\n4. Saler.\n5. Former des galettes.\n6. Cuire à la poêle avec un peu d'huile.\n7. Servir avec une sauce au yaourt.",
+    "prep_time": "25 min",
+    "servings": 4
+  },
+  {
+    "name": "Tartine chèvre miel",
+    "ingredients": ["pain", "chèvre", "miel", "noix", "salade"],
+    "instructions": "1. Faire griller les tranches de pain.\n2. Déposer des rondelles de chèvre.\n3. Passer sous le grill 3 min.\n4. Arroser de miel.\n5. Parsemer de noix concassées.\n6. Servir avec de la salade.",
+    "prep_time": "10 min",
+    "servings": 2
+  },
+  {
+    "name": "Gratin de courgettes",
+    "ingredients": ["courgettes", "crème fraîche", "fromage", "ail", "sel", "poivre"],
+    "instructions": "1. Préchauffer le four à 180°C.\n2. Couper les courgettes en rondelles.\n3. Les disposer dans un plat.\n4. Mélanger crème + ail + sel + poivre.\n5. Verser sur les courgettes.\n6. Parsemer de fromage.\n7. Cuire 30 min.",
+    "prep_time": "40 min",
+    "servings": 4
+  },
+  {
+    "name": "Smoothie fruits rouges",
+    "ingredients": ["fraises", "framboises", "banane", "yaourt", "miel"],
+    "instructions": "1. Laver les fruits rouges.\n2. Couper la banane en morceaux.\n3. Mettre tous les fruits dans un blender.\n4. Ajouter le yaourt et le miel.\n5. Mixer jusqu'à obtenir une consistance lisse.\n6. Servir frais.",
+    "prep_time": "5 min",
+    "servings": 2
+  },
+  {
+    "name": "Riz sauté aux légumes",
+    "ingredients": ["riz", "carottes", "petits pois", "oignon", "sauce soja", "huile", "œufs"],
+    "instructions": "1. Cuire le riz et le laisser refroidir.\n2. Couper les carottes en petits dés.\n3. Faire sauter les légumes dans l'huile.\n4. Ajouter le riz froid.\n5. Pousser sur un côté, brouiller les œufs.\n6. Tout mélanger avec la sauce soja.\n7. Servir chaud.",
+    "prep_time": "25 min",
+    "servings": 4
+  },
+  {
+    "name": "Pizza maison",
+    "ingredients": ["farine", "levure", "tomates", "mozzarella", "jambon", "huile d'olive", "sel"],
+    "instructions": "1. Mélanger farine + levure + eau + sel + huile.\n2. Pétrir 10 min et laisser lever 1h.\n3. Étaler la pâte.\n4. Tartiner de sauce tomate.\n5. Ajouter mozzarella et jambon.\n6. Cuire au four à 220°C pendant 15 min.",
+    "prep_time": "1h30",
+    "servings": 4
+  },
+  {
+    "name": "Pâtes au poulet et courgettes",
+    "ingredients": ["pâtes", "poulet", "courgettes", "crème fraîche", "ail", "huile d'olive", "sel"],
+    "instructions": "1. Cuire les pâtes al dente.\n2. Couper le poulet en morceaux et les courgettes en demi-rondelles.\n3. Faire revenir le poulet dans l'huile d'olive 5 min.\n4. Ajouter les courgettes et l'ail émincé.\n5. Cuire 8 min à feu moyen.\n6. Ajouter la crème fraîche, saler.\n7. Mélanger avec les pâtes égouttées.",
+    "prep_time": "25 min",
+    "servings": 4
+  },
+  {
+    "name": "Pâtes à la sauce tomate maison",
+    "ingredients": ["pâtes", "tomates", "oignon", "ail", "huile d'olive", "basilic", "sel"],
+    "instructions": "1. Émincer l'oignon et l'ail.\n2. Les faire revenir dans l'huile.\n3. Couper les tomates en dés et les ajouter.\n4. Laisser mijoter 20 min.\n5. Cuire les pâtes al dente.\n6. Mixer la sauce (optionnel).\n7. Mélanger pâtes et sauce, parsemer de basilic.",
+    "prep_time": "30 min",
+    "servings": 4
+  },
+  {
+    "name": "Poulet grillé aux courgettes",
+    "ingredients": ["poulet", "courgettes", "huile d'olive", "ail", "thym", "sel", "poivre"],
+    "instructions": "1. Couper le poulet en morceaux.\n2. Couper les courgettes en tranches épaisses.\n3. Mélanger avec huile, ail, thym, sel et poivre.\n4. Cuire à la poêle ou au four à 200°C pendant 25 min.\n5. Retourner à mi-cuisson.\n6. Servir chaud.",
+    "prep_time": "30 min",
+    "servings": 3
+  },
+  {
+    "name": "Salade poulet tomates",
+    "ingredients": ["poulet", "tomates", "salade", "huile d'olive", "sel"],
+    "instructions": "1. Griller le poulet et le couper en tranches.\n2. Laver la salade et couper les tomates.\n3. Assembler dans un saladier.\n4. Assaisonner avec huile d'olive et sel.\n5. Servir frais.",
+    "prep_time": "15 min",
+    "servings": 2
+  },
+  {
+    "name": "Courgettes farcies au poulet",
+    "ingredients": ["courgettes", "poulet", "tomates", "oignon", "fromage", "sel"],
+    "instructions": "1. Couper les courgettes en deux et les évider.\n2. Hacher le poulet et mélanger avec la chair de courgette, oignon émincé et tomates coupées.\n3. Farcir les courgettes.\n4. Parsemer de fromage.\n5. Cuire au four à 180°C pendant 30 min.",
+    "prep_time": "45 min",
+    "servings": 4
+  },
+  {
+    "name": "Pâtes au pesto de courgettes",
+    "ingredients": ["pâtes", "courgettes", "parmesan", "ail", "huile d'olive", "sel"],
+    "instructions": "1. Couper les courgettes en morceaux.\n2. Les faire cuire 10 min à la vapeur ou à la poêle.\n3. Mixer avec parmesan, ail et huile d'olive.\n4. Cuire les pâtes.\n5. Mélanger les pâtes avec le pesto de courgettes.\n6. Saler et servir.",
+    "prep_time": "20 min",
+    "servings": 4
+  },
+  {
+    "name": "Gratin de pâtes poulet tomates",
+    "ingredients": ["pâtes", "poulet", "tomates", "crème fraîche", "fromage", "sel"],
+    "instructions": "1. Cuire les pâtes al dente.\n2. Couper le poulet en morceaux et le griller.\n3. Mélanger pâtes + poulet + tomates coupées + crème.\n4. Verser dans un plat à gratin.\n5. Couvrir de fromage râpé.\n6. Cuire au four à 180°C pendant 20 min.\n7. Servir doré.",
+    "prep_time": "35 min",
+    "servings": 4
+  },
+  {
+    "name": "Poêlée de courgettes tomates",
+    "ingredients": ["courgettes", "tomates", "ail", "huile d'olive", "basilic", "sel"],
+    "instructions": "1. Couper les courgettes en rondelles.\n2. Couper les tomates en morceaux.\n3. Faire chauffer l'huile d'olive dans une poêle.\n4. Ajouter l'ail émincé puis les courgettes.\n5. Cuire 5 min, ajouter les tomates.\n6. Cuire encore 10 min à feu moyen.\n7. Ajouter le basilic et saler.",
+    "prep_time": "20 min",
+    "servings": 3
+  },
+  {
+    "name": "One-pot pâtes poulet",
+    "ingredients": ["pâtes", "poulet", "oignon", "bouillon", "crème fraîche", "sel"],
+    "instructions": "1. Couper le poulet en morceaux.\n2. Émincer l'oignon.\n3. Faire revenir poulet et oignon dans une marmite.\n4. Ajouter les pâtes crues et le bouillon.\n5. Cuire à couvert 12 min en remuant de temps en temps.\n6. Ajouter la crème, saler.\n7. Servir immédiatement.",
+    "prep_time": "20 min",
+    "servings": 4
+  },
+  {
+    "name": "Tian de légumes",
+    "ingredients": ["courgettes", "tomates", "aubergines", "huile d'olive", "ail", "thym", "sel"],
+    "instructions": "1. Préchauffer le four à 180°C.\n2. Couper tous les légumes en rondelles fines.\n3. Alterner les rondelles dans un plat huilé.\n4. Parsemer d'ail émincé et de thym.\n5. Arroser d'huile d'olive, saler.\n6. Cuire au four 45 min.\n7. Servir tiède.",
+    "prep_time": "1h",
+    "servings": 4
+  },
+  {
+    "name": "Curry de poulet express",
+    "ingredients": ["poulet", "tomates", "oignon", "crème fraîche", "curry", "riz"],
+    "instructions": "1. Couper le poulet en morceaux.\n2. Émincer l'oignon et le faire revenir.\n3. Ajouter le poulet, cuire 5 min.\n4. Ajouter les tomates coupées et le curry.\n5. Laisser mijoter 15 min.\n6. Ajouter la crème fraîche.\n7. Servir avec du riz.",
+    "prep_time": "30 min",
+    "servings": 4
+  },
+  {
+    "name": "Bruschetta tomates",
+    "ingredients": ["pain", "tomates", "ail", "basilic", "huile d'olive", "sel"],
+    "instructions": "1. Couper les tomates en petits dés.\n2. Mélanger avec basilic ciselé, ail écrasé, huile et sel.\n3. Griller les tranches de pain.\n4. Frotter d'ail.\n5. Garnir de mélange tomates.\n6. Servir immédiatement.",
+    "prep_time": "10 min",
+    "servings": 2
+  }
+]

@@ -1,0 +1,464 @@
+[
+  {
+    "name": "Tomates",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🍅",
+    "keywords": ["tomate", "tomates", "tomates cerises", "tomates grappe"]
+  },
+  {
+    "name": "Concombre",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🥒",
+    "keywords": ["concombre"]
+  },
+  {
+    "name": "Courgette",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🥒",
+    "keywords": ["courgette", "courgettes"]
+  },
+  {
+    "name": "Aubergine",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🍆",
+    "keywords": ["aubergine", "aubergines"]
+  },
+  {
+    "name": "Poivron",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🫑",
+    "keywords": ["poivron", "poivrons", "poivron rouge", "poivron vert"]
+  },
+  {
+    "name": "Carottes",
+    "category": "Légumes",
+    "default_expiry_days": 14,
+    "icon": "🥕",
+    "keywords": ["carotte", "carottes"]
+  },
+  {
+    "name": "Pommes de terre",
+    "category": "Légumes",
+    "default_expiry_days": 21,
+    "icon": "🥔",
+    "keywords": ["pomme de terre", "pommes de terre", "patate", "patates"]
+  },
+  {
+    "name": "Oignons",
+    "category": "Légumes",
+    "default_expiry_days": 30,
+    "icon": "🧅",
+    "keywords": ["oignon", "oignons"]
+  },
+  {
+    "name": "Ail",
+    "category": "Légumes",
+    "default_expiry_days": 30,
+    "icon": "🧄",
+    "keywords": ["ail", "gousse d'ail"]
+  },
+  {
+    "name": "Poireaux",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🥬",
+    "keywords": ["poireau", "poireaux"]
+  },
+  {
+    "name": "Salade",
+    "category": "Légumes",
+    "default_expiry_days": 5,
+    "icon": "🥬",
+    "keywords": ["salade", "laitue", "batavia", "roquette", "mâche"]
+  },
+  {
+    "name": "Champignons",
+    "category": "Légumes",
+    "default_expiry_days": 5,
+    "icon": "🍄",
+    "keywords": ["champignon", "champignons", "champignons de Paris"]
+  },
+  {
+    "name": "Haricots verts",
+    "category": "Légumes",
+    "default_expiry_days": 5,
+    "icon": "🫛",
+    "keywords": ["haricots verts", "haricot vert"]
+  },
+  {
+    "name": "Petits pois",
+    "category": "Légumes",
+    "default_expiry_days": 5,
+    "icon": "🫛",
+    "keywords": ["petits pois", "petit pois"]
+  },
+  {
+    "name": "Épinards",
+    "category": "Légumes",
+    "default_expiry_days": 4,
+    "icon": "🥬",
+    "keywords": ["épinards", "épinard"]
+  },
+  {
+    "name": "Brocoli",
+    "category": "Légumes",
+    "default_expiry_days": 5,
+    "icon": "🥦",
+    "keywords": ["brocoli", "brocolis"]
+  },
+  {
+    "name": "Chou-fleur",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🥦",
+    "keywords": ["chou-fleur"]
+  },
+  {
+    "name": "Chou",
+    "category": "Légumes",
+    "default_expiry_days": 14,
+    "icon": "🥬",
+    "keywords": ["chou", "chou vert", "chou blanc", "chou rouge"]
+  },
+  {
+    "name": "Céleri",
+    "category": "Légumes",
+    "default_expiry_days": 10,
+    "icon": "🥬",
+    "keywords": ["céleri", "céleri branche"]
+  },
+  {
+    "name": "Radis",
+    "category": "Légumes",
+    "default_expiry_days": 7,
+    "icon": "🌶️",
+    "keywords": ["radis"]
+  },
+  {
+    "name": "Pommes",
+    "category": "Fruits",
+    "default_expiry_days": 14,
+    "icon": "🍎",
+    "keywords": ["pomme", "pommes"]
+  },
+  {
+    "name": "Bananes",
+    "category": "Fruits",
+    "default_expiry_days": 5,
+    "icon": "🍌",
+    "keywords": ["banane", "bananes"]
+  },
+  {
+    "name": "Oranges",
+    "category": "Fruits",
+    "default_expiry_days": 14,
+    "icon": "🍊",
+    "keywords": ["orange", "oranges"]
+  },
+  {
+    "name": "Citrons",
+    "category": "Fruits",
+    "default_expiry_days": 21,
+    "icon": "🍋",
+    "keywords": ["citron", "citrons"]
+  },
+  {
+    "name": "Fraises",
+    "category": "Fruits",
+    "default_expiry_days": 4,
+    "icon": "🍓",
+    "keywords": ["fraise", "fraises"]
+  },
+  {
+    "name": "Framboises",
+    "category": "Fruits",
+    "default_expiry_days": 3,
+    "icon": "🫐",
+    "keywords": ["framboise", "framboises"]
+  },
+  {
+    "name": "Raisin",
+    "category": "Fruits",
+    "default_expiry_days": 5,
+    "icon": "🍇",
+    "keywords": ["raisin", "raisins"]
+  },
+  {
+    "name": "Poires",
+    "category": "Fruits",
+    "default_expiry_days": 7,
+    "icon": "🍐",
+    "keywords": ["poire", "poires"]
+  },
+  {
+    "name": "Kiwis",
+    "category": "Fruits",
+    "default_expiry_days": 7,
+    "icon": "🥝",
+    "keywords": ["kiwi", "kiwis"]
+  },
+  {
+    "name": "Avocat",
+    "category": "Fruits",
+    "default_expiry_days": 4,
+    "icon": "🥑",
+    "keywords": ["avocat", "avocats"]
+  },
+  {
+    "name": "Mangue",
+    "category": "Fruits",
+    "default_expiry_days": 5,
+    "icon": "🥭",
+    "keywords": ["mangue", "mangues"]
+  },
+  {
+    "name": "Ananas",
+    "category": "Fruits",
+    "default_expiry_days": 5,
+    "icon": "🍍",
+    "keywords": ["ananas"]
+  },
+  {
+    "name": "Melon",
+    "category": "Fruits",
+    "default_expiry_days": 5,
+    "icon": "🍈",
+    "keywords": ["melon"]
+  },
+  {
+    "name": "Poulet",
+    "category": "Viandes",
+    "default_expiry_days": 3,
+    "icon": "🍗",
+    "keywords": ["poulet", "blanc de poulet", "escalope de poulet", "cuisse de poulet"]
+  },
+  {
+    "name": "Bœuf",
+    "category": "Viandes",
+    "default_expiry_days": 3,
+    "icon": "🥩",
+    "keywords": ["boeuf", "bœuf", "steak", "viande hachée"]
+  },
+  {
+    "name": "Porc",
+    "category": "Viandes",
+    "default_expiry_days": 3,
+    "icon": "🥩",
+    "keywords": ["porc", "côtes de porc", "filet mignon"]
+  },
+  {
+    "name": "Jambon",
+    "category": "Viandes",
+    "default_expiry_days": 5,
+    "icon": "🥓",
+    "keywords": ["jambon", "jambon blanc", "jambon cru"]
+  },
+  {
+    "name": "Lardons",
+    "category": "Viandes",
+    "default_expiry_days": 7,
+    "icon": "🥓",
+    "keywords": ["lardons", "lardon", "poitrine fumée"]
+  },
+  {
+    "name": "Saucisses",
+    "category": "Viandes",
+    "default_expiry_days": 4,
+    "icon": "🌭",
+    "keywords": ["saucisse", "saucisses", "merguez", "chipolata"]
+  },
+  {
+    "name": "Saumon",
+    "category": "Poissons",
+    "default_expiry_days": 2,
+    "icon": "🐟",
+    "keywords": ["saumon", "pavé de saumon", "filet de saumon"]
+  },
+  {
+    "name": "Cabillaud",
+    "category": "Poissons",
+    "default_expiry_days": 2,
+    "icon": "🐟",
+    "keywords": ["cabillaud", "colin", "poisson blanc"]
+  },
+  {
+    "name": "Crevettes",
+    "category": "Poissons",
+    "default_expiry_days": 2,
+    "icon": "🦐",
+    "keywords": ["crevette", "crevettes", "gambas"]
+  },
+  {
+    "name": "Thon frais",
+    "category": "Poissons",
+    "default_expiry_days": 2,
+    "icon": "🐟",
+    "keywords": ["thon", "thon frais"]
+  },
+  {
+    "name": "Lait",
+    "category": "Produits laitiers",
+    "default_expiry_days": 7,
+    "icon": "🥛",
+    "keywords": ["lait", "lait entier", "lait demi-écrémé"]
+  },
+  {
+    "name": "Beurre",
+    "category": "Produits laitiers",
+    "default_expiry_days": 30,
+    "icon": "🧈",
+    "keywords": ["beurre"]
+  },
+  {
+    "name": "Crème fraîche",
+    "category": "Produits laitiers",
+    "default_expiry_days": 10,
+    "icon": "🥛",
+    "keywords": ["crème fraîche", "crème liquide", "crème épaisse"]
+  },
+  {
+    "name": "Yaourt",
+    "category": "Produits laitiers",
+    "default_expiry_days": 14,
+    "icon": "🥛",
+    "keywords": ["yaourt", "yaourts", "yaourt nature"]
+  },
+  {
+    "name": "Fromage râpé",
+    "category": "Produits laitiers",
+    "default_expiry_days": 14,
+    "icon": "🧀",
+    "keywords": ["fromage", "emmental", "gruyère", "fromage râpé"]
+  },
+  {
+    "name": "Mozzarella",
+    "category": "Produits laitiers",
+    "default_expiry_days": 7,
+    "icon": "🧀",
+    "keywords": ["mozzarella"]
+  },
+  {
+    "name": "Parmesan",
+    "category": "Produits laitiers",
+    "default_expiry_days": 30,
+    "icon": "🧀",
+    "keywords": ["parmesan", "parmigiano"]
+  },
+  {
+    "name": "Chèvre",
+    "category": "Produits laitiers",
+    "default_expiry_days": 10,
+    "icon": "🧀",
+    "keywords": ["chèvre", "fromage de chèvre", "bûche de chèvre"]
+  },
+  {
+    "name": "Œufs",
+    "category": "Produits laitiers",
+    "default_expiry_days": 28,
+    "icon": "🥚",
+    "keywords": ["œuf", "oeufs", "œufs"]
+  },
+  {
+    "name": "Pâtes",
+    "category": "Épicerie",
+    "default_expiry_days": 365,
+    "icon": "🍝",
+    "keywords": ["pâtes", "spaghetti", "penne", "fusilli", "tagliatelles", "coquillettes"]
+  },
+  {
+    "name": "Riz",
+    "category": "Épicerie",
+    "default_expiry_days": 365,
+    "icon": "🍚",
+    "keywords": ["riz", "riz basmati", "riz long"]
+  },
+  {
+    "name": "Pain de mie",
+    "category": "Épicerie",
+    "default_expiry_days": 7,
+    "icon": "🍞",
+    "keywords": ["pain de mie", "pain"]
+  },
+  {
+    "name": "Tortillas",
+    "category": "Épicerie",
+    "default_expiry_days": 14,
+    "icon": "🫓",
+    "keywords": ["tortilla", "tortillas", "galette de blé"]
+  },
+  {
+    "name": "Pâte brisée",
+    "category": "Épicerie",
+    "default_expiry_days": 14,
+    "icon": "🥧",
+    "keywords": ["pâte brisée", "pâte feuilletée", "pâte à tarte"]
+  },
+  {
+    "name": "Farine",
+    "category": "Épicerie",
+    "default_expiry_days": 365,
+    "icon": "🌾",
+    "keywords": ["farine", "farine de blé"]
+  },
+  {
+    "name": "Huile d'olive",
+    "category": "Condiments",
+    "default_expiry_days": 365,
+    "icon": "🫒",
+    "keywords": ["huile d'olive", "huile olive"]
+  },
+  {
+    "name": "Moutarde",
+    "category": "Condiments",
+    "default_expiry_days": 180,
+    "icon": "🟡",
+    "keywords": ["moutarde"]
+  },
+  {
+    "name": "Sauce soja",
+    "category": "Condiments",
+    "default_expiry_days": 365,
+    "icon": "🥫",
+    "keywords": ["sauce soja"]
+  },
+  {
+    "name": "Miel",
+    "category": "Condiments",
+    "default_expiry_days": 730,
+    "icon": "🍯",
+    "keywords": ["miel"]
+  },
+  {
+    "name": "Basilic frais",
+    "category": "Herbes",
+    "default_expiry_days": 5,
+    "icon": "🌿",
+    "keywords": ["basilic", "basilic frais"]
+  },
+  {
+    "name": "Persil",
+    "category": "Herbes",
+    "default_expiry_days": 5,
+    "icon": "🌿",
+    "keywords": ["persil", "persil frais"]
+  },
+  {
+    "name": "Menthe",
+    "category": "Herbes",
+    "default_expiry_days": 5,
+    "icon": "🌿",
+    "keywords": ["menthe", "menthe fraîche"]
+  },
+  {
+    "name": "Coriandre",
+    "category": "Herbes",
+    "default_expiry_days": 5,
+    "icon": "🌿",
+    "keywords": ["coriandre", "coriandre fraîche"]
+  }
+]

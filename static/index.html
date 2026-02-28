@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FriScan — Gestionnaire de Frigo</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- ════════════ HEADER ════════════ -->
+    <header>
+        <div class="header-content">
+            <h1>🧊 FriScan</h1>
+            <p class="subtitle">Gestionnaire Intelligent de Frigo</p>
+        </div>
+        <div id="stats-bar" class="stats-bar">
+            <span id="stat-total" class="stat-badge">0 produits</span>
+            <span id="stat-expiring" class="stat-badge warning">0 bientôt périmés</span>
+            <span id="stat-expired" class="stat-badge danger">0 périmés</span>
+        </div>
+    </header>
+
+    <!-- ════════════ NAVIGATION TABS ════════════ -->
+    <nav class="tabs">
+        <button class="tab active" data-tab="scanner">📷 Scanner</button>
+        <button class="tab" data-tab="manual">✏️ Ajout manuel</button>
+        <button class="tab" data-tab="fridge">🧊 Mon Frigo</button>
+        <button class="tab" data-tab="recipes">🍳 Recettes</button>
+    </nav>
+
+    <!-- ════════════ TAB: SCANNER ════════════ -->
+    <section id="tab-scanner" class="tab-content active">
+        <div class="card">
+            <h2>Scanner un produit</h2>
+            <p class="help-text">
+                Scannez le code-barres avec votre webcam, tapez-le manuellement, 
+                ou utilisez une douchette USB (elle tape le code automatiquement).
+            </p>
+
+            <!-- Scan par webcam -->
+            <div class="scanner-section">
+                <h3>📷 Webcam</h3>
+                <div class="video-container">
+                    <video id="scanner-video" autoplay playsinline></video>
+                    <canvas id="scanner-canvas" style="display:none;"></canvas>
+                    <div id="scanner-overlay" class="scanner-overlay">
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                <div class="scanner-controls">
+                    <button id="btn-start-cam" class="btn btn-primary" onclick="startCamera()">
+                        ▶️ Démarrer la caméra
+                    </button>
+                    <button id="btn-capture" class="btn btn-success" onclick="captureAndScan()" disabled>
+                        📸 Scanner
+                    </button>
+                    <button id="btn-stop-cam" class="btn btn-secondary" onclick="stopCamera()" disabled>
+                        ⏹️ Arrêter
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scan par texte / douchette -->
+            <div class="scanner-section">
+                <h3>⌨️ Code-barres manuel / Douchette USB</h3>
+                <p class="help-text">
+                    Cliquez dans le champ ci-dessous, puis scannez avec la douchette ou tapez le code.
+                </p>
+                <div class="input-group">
+                    <input type="text" id="barcode-input" placeholder="Entrez ou scannez le code-barres..."
+                           class="input-large" autofocus>
+                    <button class="btn btn-primary" onclick="searchBarcode()">🔍 Rechercher</button>
+                </div>
+            </div>
+
+            <!-- Résultat du scan -->
+            <div id="scan-result" class="scan-result hidden">
+                <h3>Produit trouvé</h3>
+                <div class="product-preview">
+                    <img id="result-image" src="" alt="" class="product-image">
+                    <div class="product-info">
+                        <p class="product-name" id="result-name"></p>
+                        <p class="product-brand" id="result-brand"></p>
+                        <p class="product-category" id="result-category"></p>
+                        <p class="product-quantity" id="result-quantity"></p>
+                        <span class="nutriscore" id="result-nutriscore"></span>
+                    </div>
+                </div>
+
+                <!-- Saisie date + ajout -->
+                <div class="expiry-section">
+                    <h4>📅 Date limite de consommation</h4>
+                    <div class="input-group">
+                        <input type="date" id="result-expiry" class="input-date">
+                        <button class="btn btn-voice" onclick="startVoiceRecognition('result-expiry')">
+                            🎤 Dicter la date
+                        </button>
+                    </div>
+                    <div id="voice-status" class="voice-status hidden"></div>
+                    <div class="input-group" style="margin-top: 10px;">
+                        <label>Quantité :</label>
+                        <input type="number" id="result-amount" value="1" min="1" max="99" class="input-small">
+                    </div>
+                    <button class="btn btn-success btn-large" onclick="addScannedProduct()">
+                        ➕ Ajouter au frigo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ TAB: AJOUT MANUEL ════════════ -->
+    <section id="tab-manual" class="tab-content">
+        <div class="card">
+            <h2>✏️ Ajout manuel</h2>
+            <p class="help-text">
+                Pour les produits frais sans code-barres (fruits, légumes, viande à la coupe, etc.)
+                Tapez le nom et choisissez dans la liste pour remplir automatiquement la catégorie et la date de péremption.
+            </p>
+
+            <!-- Grille de produits rapides -->
+            <div id="quick-products" class="quick-products-grid"></div>
+
+            <form id="manual-form" onsubmit="addManualProduct(event)">
+                <div class="form-group">
+                    <label for="manual-name">Nom du produit *</label>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="manual-name" required
+                               placeholder="Tapez pour chercher (ex: tomate, poulet, carotte...)"
+                               class="input-large" autocomplete="off"
+                               oninput="onManualNameInput(this.value)">
+                        <div id="autocomplete-list" class="autocomplete-list hidden"></div>
+                    </div>
+                    <div id="fresh-info" class="fresh-info hidden">
+                        <span id="fresh-icon"></span>
+                        <span id="fresh-msg"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-category">Catégorie</label>
+                        <select id="manual-category" class="input-large">
+                            <option value="">— Choisir —</option>
+                            <option value="Fruits">🍎 Fruits</option>
+                            <option value="Légumes">🥕 Légumes</option>
+                            <option value="Viandes">🥩 Viandes</option>
+                            <option value="Poissons">🐟 Poissons</option>
+                            <option value="Produits laitiers">🧀 Produits laitiers</option>
+                            <option value="Boissons">🥤 Boissons</option>
+                            <option value="Condiments">🧂 Condiments</option>
+                            <option value="Épicerie">🍝 Épicerie</option>
+                            <option value="Herbes">🌿 Herbes</option>
+                            <option value="Surgelés">🧊 Surgelés</option>
+                            <option value="Autre">📦 Autre</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="manual-quantity">Quantité / Poids</label>
+                        <input type="text" id="manual-quantity" placeholder="Ex : 500g, 1L, 6 pièces...">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manual-expiry">Date limite de consommation</label>
+                        <div class="input-group">
+                            <input type="date" id="manual-expiry">
+                            <button type="button" class="btn btn-voice" onclick="startVoiceRecognition('manual-expiry')">
+                                🎤 Dicter
+                            </button>
+                        </div>
+                        <div id="voice-status-manual" class="voice-status hidden"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="manual-amount">Nombre</label>
+                        <input type="number" id="manual-amount" value="1" min="1" max="99">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-large">
+                    ➕ Ajouter au frigo
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- ════════════ TAB: MON FRIGO ════════════ -->
+    <section id="tab-fridge" class="tab-content">
+        <div class="card">
+            <h2>🧊 Contenu du frigo</h2>
+            <div class="fridge-controls">
+                <input type="text" id="search-input" placeholder="🔍 Rechercher un produit..."
+                       oninput="filterProducts()" class="input-large">
+                <select id="filter-select" onchange="loadProducts()" class="input-medium">
+                    <option value="all">Tous les produits</option>
+                    <option value="in_fridge">Dans le frigo</option>
+                    <option value="expiring">⚠️ Bientôt périmés (3j)</option>
+                    <option value="expired">❌ Périmés</option>
+                </select>
+            </div>
+
+            <div id="products-list" class="products-grid">
+                <!-- Rempli dynamiquement -->
+            </div>
+
+            <div id="empty-fridge" class="empty-state hidden">
+                <p>🧊 Votre frigo est vide !</p>
+                <p>Scannez ou ajoutez des produits pour commencer.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ TAB: RECETTES ════════════ -->
+    <section id="tab-recipes" class="tab-content">
+        <div class="card">
+            <h2>🍳 Suggestions de recettes</h2>
+            <p class="help-text">
+                Recettes adaptées aux produits de votre frigo. Les recettes utilisant des produits 
+                bientôt périmés sont priorisées.
+            </p>
+            <button class="btn btn-primary btn-large" onclick="loadRecipes()">
+                🔄 Générer des suggestions
+            </button>
+
+            <div id="recipes-list" class="recipes-grid">
+                <!-- Rempli dynamiquement -->
+            </div>
+
+            <div id="no-recipes" class="empty-state hidden">
+                <p>🍳 Aucune recette trouvée.</p>
+                <p>Ajoutez plus de produits dans votre frigo pour obtenir des suggestions.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ MODAL PRODUIT ════════════ -->
+    <div id="product-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- ════════════ NOTIFICATIONS ════════════ -->
+    <div id="notifications" class="notifications"></div>
+
+    <!-- ════════════ SCRIPTS ════════════ -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/scanner.js"></script>
+    <script src="/static/js/voice.js"></script>
+</body>
+</html>
