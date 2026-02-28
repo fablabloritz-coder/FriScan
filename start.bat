@@ -25,6 +25,13 @@ if not exist "venv\Scripts\activate.bat" (
 )
 
 echo.
+echo [*] Nettoyage du port 8000...
+:: Tuer les processus utilisant le port 8000
+for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr :8000') do (
+    taskkill /PID %%a /F >nul 2>&1
+)
+timeout /t 1 /nobreak >nul 2>&1
+
 echo [*] Demarrage du serveur FriScan...
 echo [*] Interface disponible sur : http://localhost:8000
 echo [*] Documentation API sur    : http://localhost:8000/docs
