@@ -13,21 +13,27 @@
     let currentProduct = null;
 
     // Bip sonore
-    const beepCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep() {
         try {
             const settings = JSON.parse(localStorage.getItem('frigoscan-settings') || '{}');
-            if (settings.scan_beep === false) return;
+            if (settings.scan_beep === false || settings.scan_beep === 'false') return;
             const vol = parseFloat(settings.scan_beep_volume) || 0.5;
-
-            const osc = beepCtx.createOscillator();
-            const gain = beepCtx.createGain();
-            osc.connect(gain);
-            gain.connect(beepCtx.destination);
-            osc.frequency.value = 1200;
-            gain.gain.value = vol;
-            osc.start();
-            osc.stop(beepCtx.currentTime + 0.12);
+            const type = settings.beep_type || 'standard';
+            // Utiliser le système de bip centralisé dans settings.js
+            if (FrigoScan.Settings && FrigoScan.Settings.playBeepType) {
+                FrigoScan.Settings.playBeepType(type, vol);
+            } else {
+                // Fallback basique
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 1200;
+                gain.gain.value = vol;
+                osc.start();
+                osc.stop(ctx.currentTime + 0.12);
+            }
         } catch (e) { /* silent */ }
     }
 
@@ -36,13 +42,32 @@
         setupModeTabs();
         setupManualScan();
         setupCartButtons();
+        setupFocusSlider();
         listCameras();
-        // Auto-démarrer la caméra si on est en mode caméra
-        const cameraMode = document.getElementById('scanner-camera-mode');
-        if (cameraMode && !cameraMode.classList.contains('hidden')) {
-            setTimeout(() => startCamera(), 300);
-        }
+        // Afficher le bouton "Activer la caméra" au lieu d'auto-démarrer
+        showStartCameraBtn();
     };
+
+    function showStartCameraBtn() {
+        const reader = document.getElementById('scanner-reader');
+        if (!reader) return;
+        // Ne pas recréer si la caméra tourne déjà
+        if (isScanning) return;
+        reader.innerHTML = `
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;gap:16px;">
+                <i class="fas fa-camera" style="font-size:3rem;color:var(--text-muted);"></i>
+                <button id="btn-start-camera" class="btn btn-primary btn-lg">
+                    <i class="fas fa-video"></i> Activer la caméra
+                </button>
+                <p style="color:var(--text-muted);font-size:0.82rem;text-align:center;">
+                    Autorisez l'accès à la caméra pour scanner les codes-barres
+                </p>
+            </div>`;
+        document.getElementById('btn-start-camera').addEventListener('click', () => {
+            reader.innerHTML = '';
+            startCamera();
+        });
+    }
 
     function setupModeTabs() {
         document.querySelectorAll('[data-scanner-mode]').forEach(btn => {
@@ -124,7 +149,6 @@
         html5QrCode = new Html5Qrcode('scanner-reader');
         const settings = JSON.parse(localStorage.getItem('frigoscan-settings') || '{}');
         const interval = (parseInt(settings.scan_interval) || 2) * 1000;
-        const resParts = (settings.webcam_resolution || '1280x720').split('x');
 
         const config = {
             fps: Math.round(1000 / interval),
@@ -132,26 +156,104 @@
             aspectRatio: 4 / 3,
         };
 
-        try {
-            const cameraConstraints = cameraId
-                ? cameraId
-                : { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] };
-            await html5QrCode.start(cameraConstraints, config, onScanSuccess, onScanFailure);
-            isScanning = true;
+        // Essayer d'abord avec le cameraId ou toute caméra disponible
+        const attempts = [];
+        if (cameraId) {
+            attempts.push(cameraId);
+        } else {
+            // 1) facingMode environment avec focus (mobile)
+            attempts.push({ facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] });
+            // 2) facingMode environment sans focus
+            attempts.push({ facingMode: 'environment' });
+            // 3) facingMode user (webcam frontale)
+            attempts.push({ facingMode: 'user' });
+        }
 
-            // Forcer le focus continu si possible (utile quand on passe un cameraId)
+        let started = false;
+        for (const constraints of attempts) {
+            try {
+                await html5QrCode.start(constraints, config, onScanSuccess, onScanFailure);
+                isScanning = true;
+                started = true;
+                break;
+            } catch (e) {
+                console.warn('Tentative caméra échouée:', constraints, e.message || e);
+                // Recréer l'instance pour la prochaine tentative
+                try { await html5QrCode.stop(); } catch (_) {}
+                html5QrCode = new Html5Qrcode('scanner-reader');
+            }
+        }
+
+        if (!started) {
+            FrigoScan.toast('Impossible de démarrer la caméra. Vérifiez les permissions ou sélectionnez une caméra.', 'error');
+            showStartCameraBtn();
+            return;
+        }
+
+        // Activer le focus continu + configurer le slider de focus
+        try {
+            const videoElem = document.querySelector('#scanner-reader video');
+            if (videoElem && videoElem.srcObject) {
+                const track = videoElem.srcObject.getVideoTracks()[0];
+                if (track) {
+                    const caps = track.getCapabilities ? track.getCapabilities() : {};
+                    // Configurer le slider focus si supporté
+                    const focusSlider = document.getElementById('focus-slider');
+                    const focusContainer = document.getElementById('focus-control');
+                    if (caps.focusDistance && focusSlider && focusContainer) {
+                        focusContainer.classList.remove('hidden');
+                        focusSlider.min = caps.focusDistance.min;
+                        focusSlider.max = caps.focusDistance.max;
+                        focusSlider.step = caps.focusDistance.step || 1;
+                        focusSlider.value = (caps.focusDistance.min + caps.focusDistance.max) / 2;
+                        document.getElementById('focus-value').textContent = 'Auto';
+                    } else if (focusContainer) {
+                        focusContainer.classList.add('hidden');
+                    }
+                    // Focus continu par défaut
+                    if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                        await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                    }
+                }
+            }
+        } catch (focusErr) { /* Focus non supporté */ }
+    }
+
+    // Slider focus
+    function setupFocusSlider() {
+        const slider = document.getElementById('focus-slider');
+        const autoBtn = document.getElementById('btn-focus-auto');
+        if (!slider) return;
+
+        slider.addEventListener('input', async () => {
+            const val = parseFloat(slider.value);
+            document.getElementById('focus-value').textContent = val.toFixed(0);
             try {
                 const videoElem = document.querySelector('#scanner-reader video');
                 if (videoElem && videoElem.srcObject) {
                     const track = videoElem.srcObject.getVideoTracks()[0];
-                    if (track && track.applyConstraints) {
-                        await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                    if (track) {
+                        await track.applyConstraints({
+                            advanced: [{ focusMode: 'manual', focusDistance: val }]
+                        });
                     }
                 }
-            } catch (focusErr) { /* Focus continu non supporté par cette caméra */ }
-        } catch (e) {
-            console.error('Erreur démarrage caméra:', e);
-            FrigoScan.toast('Impossible de démarrer la caméra. Vérifiez les permissions.', 'error');
+            } catch (e) { /* ignore */ }
+        });
+
+        if (autoBtn) {
+            autoBtn.addEventListener('click', async () => {
+                document.getElementById('focus-value').textContent = 'Auto';
+                try {
+                    const videoElem = document.querySelector('#scanner-reader video');
+                    if (videoElem && videoElem.srcObject) {
+                        const track = videoElem.srcObject.getVideoTracks()[0];
+                        if (track) {
+                            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+            });
         }
     }
 

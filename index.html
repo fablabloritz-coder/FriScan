@@ -19,7 +19,7 @@
             <i class="fas fa-arrow-left"></i>
         </button>
         <h1 id="page-title">
-            <img src="/images/logo_frigoscan.png" alt="FrigoScan" class="header-logo"> FrigoScan
+            <img src="/static/images/logo_frigoscan.png" alt="FrigoScan" class="header-logo"> FrigoScan
         </h1>
         <button id="btn-theme" class="header-btn" aria-label="Basculer le thème">
             <i class="fas fa-moon"></i>
@@ -109,6 +109,15 @@
                         <select id="scanner-camera-select" class="form-select">
                             <option value="">Sélectionner une caméra...</option>
                         </select>
+                    </div>
+                    <!-- Contrôle du focus -->
+                    <div id="focus-control" class="hidden" style="margin-top:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:0.82rem;white-space:nowrap;"><i class="fas fa-crosshairs"></i> Focus</label>
+                            <input type="range" id="focus-slider" class="form-range" style="flex:1;">
+                            <span id="focus-value" style="font-size:0.82rem;min-width:36px;text-align:center;">Auto</span>
+                            <button id="btn-focus-auto" class="btn btn-sm" title="Focus automatique"><i class="fas fa-magic"></i> Auto</button>
+                        </div>
                     </div>
                 </div>
 
@@ -364,21 +373,43 @@
         <!-- RECETTES -->
         <!-- ============================================================ -->
         <section id="view-recipes" class="view">
-            <div class="recipes-header">
-                <div class="search-bar">
-                    <input type="text" id="recipe-search" class="form-input" placeholder="Rechercher une recette...">
-                    <button id="btn-recipe-search" class="btn btn-primary">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-                <button id="btn-recipe-suggest" class="btn btn-success btn-lg">
-                    <i class="fas fa-magic"></i> Suggestions selon mon frigo
+            <!-- Onglets Suggestions / Mes recettes -->
+            <div class="recipe-tabs">
+                <button class="tab-btn active" data-recipe-tab="search" id="tab-recipe-search">
+                    <i class="fas fa-search"></i> Recherche
+                </button>
+                <button class="tab-btn" data-recipe-tab="saved" id="tab-recipe-saved">
+                    <i class="fas fa-bookmark"></i> Mes recettes <span id="badge-saved-recipes" class="tab-badge">0</span>
                 </button>
             </div>
-            <div id="recipes-list" class="recipes-grid"></div>
-            <div id="recipes-empty" class="empty-state hidden">
-                <i class="fas fa-book-open"></i>
-                <p>Aucune recette trouvée. Essayez une recherche ou demandez des suggestions !</p>
+
+            <!-- Onglet Recherche -->
+            <div id="recipe-tab-search">
+                <div class="recipes-header">
+                    <div class="search-bar">
+                        <input type="text" id="recipe-search" class="form-input" placeholder="Rechercher une recette...">
+                        <button id="btn-recipe-search" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <button id="btn-recipe-suggest" class="btn btn-success btn-lg">
+                        <i class="fas fa-magic"></i> Suggestions selon mon frigo
+                    </button>
+                </div>
+                <div id="recipes-list" class="recipes-grid"></div>
+                <div id="recipes-empty" class="empty-state hidden">
+                    <i class="fas fa-book-open"></i>
+                    <p>Aucune recette trouvée. Essayez une recherche ou demandez des suggestions !</p>
+                </div>
+            </div>
+
+            <!-- Onglet Mes recettes sauvegardées -->
+            <div id="recipe-tab-saved" class="hidden">
+                <div id="saved-recipes-list" class="recipes-grid"></div>
+                <div id="saved-recipes-empty" class="empty-state">
+                    <i class="fas fa-bookmark"></i>
+                    <p>Aucune recette sauvegardée. Sauvegardez des recettes depuis les suggestions !</p>
+                </div>
             </div>
 
             <!-- Détail recette (modal) -->
@@ -554,33 +585,57 @@
                 <!-- Scanner -->
                 <div class="settings-group">
                     <h3><i class="fas fa-camera"></i> Scanner</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Intervalle de scan (sec)</label>
-                            <input type="range" id="settings-scan-interval" class="form-range" min="1" max="5" value="2">
-                            <span id="scan-interval-label">2s</span>
-                        </div>
-                        <div class="form-group">
-                            <label>Volume du bip</label>
-                            <input type="range" id="settings-beep-volume" class="form-range" min="0" max="1" step="0.1" value="0.5">
-                        </div>
+                    <div class="form-group">
+                        <label>Intervalle de scan : <strong id="scan-interval-label">2s</strong></label>
+                        <input type="range" id="settings-scan-interval" class="form-range" min="1" max="5" value="2">
                     </div>
                     <label class="checkbox-label">
                         <input type="checkbox" id="settings-scan-beep" checked> Bip sonore au scan
                     </label>
                     <div class="form-group">
-                        <label>Caméra par défaut</label>
-                        <select id="settings-default-camera" class="form-select">
-                            <option value="">Automatique</option>
-                        </select>
+                        <label>Type de bip</label>
+                        <div class="beep-types" id="beep-types-container">
+                            <label class="beep-type-option">
+                                <input type="radio" name="beep-type" value="standard" checked>
+                                <span>🔔 Standard</span>
+                                <button type="button" class="btn btn-sm btn-preview-beep" data-beep="standard" title="Aperçu">▶</button>
+                            </label>
+                            <label class="beep-type-option">
+                                <input type="radio" name="beep-type" value="soft">
+                                <span>🔕 Doux</span>
+                                <button type="button" class="btn btn-sm btn-preview-beep" data-beep="soft" title="Aperçu">▶</button>
+                            </label>
+                            <label class="beep-type-option">
+                                <input type="radio" name="beep-type" value="double">
+                                <span>🔔🔔 Double</span>
+                                <button type="button" class="btn btn-sm btn-preview-beep" data-beep="double" title="Aperçu">▶</button>
+                            </label>
+                            <label class="beep-type-option">
+                                <input type="radio" name="beep-type" value="cash">
+                                <span>💰 Caisse</span>
+                                <button type="button" class="btn btn-sm btn-preview-beep" data-beep="cash" title="Aperçu">▶</button>
+                            </label>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Résolution webcam</label>
-                        <select id="settings-webcam-resolution" class="form-select">
-                            <option value="640x480">640×480</option>
-                            <option value="1280x720" selected>1280×720 (HD)</option>
-                            <option value="1920x1080">1920×1080 (Full HD)</option>
-                        </select>
+                        <label>Volume du bip : <strong id="beep-volume-label">50%</strong></label>
+                        <input type="range" id="settings-beep-volume" class="form-range" min="0" max="1" step="0.1" value="0.5">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Caméra par défaut</label>
+                            <select id="settings-default-camera" class="form-select">
+                                <option value="">Automatique</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Résolution webcam</label>
+                            <select id="settings-webcam-resolution" class="form-select">
+                                <option value="640x480">640×480</option>
+                                <option value="1280x720" selected>1280×720 (HD)</option>
+                                <option value="1920x1080">1920×1080 (Full HD)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 

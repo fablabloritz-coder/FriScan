@@ -1,11 +1,13 @@
 /**
  * FrigoScan — Module Recettes (recipes.js)
- * Recherche, suggestions, affichage détaillé.
+ * Recherche, suggestions, recettes sauvegardées, affichage détaillé.
  */
 
 (function () {
     const Recipes = {};
     FrigoScan.Recipes = Recipes;
+
+    let savedRecipeTitles = new Set(); // Titres des recettes déjà sauvegardées
 
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-recipe-search').addEventListener('click', searchRecipes);
@@ -13,7 +15,94 @@
             if (e.key === 'Enter') searchRecipes();
         });
         document.getElementById('btn-recipe-suggest').addEventListener('click', suggestRecipes);
+
+        // Onglets recherche / sauvegardées
+        document.querySelectorAll('[data-recipe-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-recipe-tab]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.dataset.recipeTab;
+                document.getElementById('recipe-tab-search').classList.toggle('hidden', tab !== 'search');
+                document.getElementById('recipe-tab-saved').classList.toggle('hidden', tab !== 'saved');
+                if (tab === 'saved') loadSavedRecipes();
+            });
+        });
     });
+
+    // ---- Recettes sauvegardées ----
+    async function loadSavedRecipes() {
+        const data = await FrigoScan.API.get('/api/recipes/');
+        if (!data.success) return;
+        const recipes = data.recipes || [];
+        savedRecipeTitles = new Set(recipes.map(r => r.title.toLowerCase().trim()));
+
+        const badge = document.getElementById('badge-saved-recipes');
+        if (badge) badge.textContent = recipes.length;
+
+        const grid = document.getElementById('saved-recipes-list');
+        const empty = document.getElementById('saved-recipes-empty');
+
+        if (recipes.length === 0) {
+            grid.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        grid.innerHTML = recipes.map((r, idx) => {
+            const imgUrl = r.image_url || '';
+            const imgHtml = imgUrl
+                ? `<img class="recipe-card-img" src="${imgUrl}" alt="${r.title}" onerror="this.style.display='none'">`
+                : `<div class="recipe-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--bg-hover);">🍳</div>`;
+            const prepTime = (r.prep_time || 0) + (r.cook_time || 0);
+            return `
+                <div class="recipe-card saved-recipe-card" data-saved-idx="${idx}">
+                    ${imgHtml}
+                    <div class="recipe-card-body">
+                        <div class="recipe-card-title">${r.title}</div>
+                        <div class="recipe-card-meta">
+                            ${prepTime ? `<span><i class="fas fa-clock"></i> ${prepTime} min</span>` : ''}
+                            <span><i class="fas fa-users"></i> ${r.servings || 4} pers.</span>
+                            <span class="badge" style="background:var(--primary);color:#fff;"><i class="fas fa-bookmark"></i></span>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger btn-sm btn-delete-saved" data-id="${r.id}" title="Supprimer" style="position:absolute;top:8px;right:8px;z-index:2;"
+                        onclick="event.stopPropagation(); FrigoScan.Recipes.deleteSaved(${r.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        grid.querySelectorAll('.saved-recipe-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const idx = parseInt(card.dataset.savedIdx);
+                showRecipeDetail(recipes[idx]);
+            });
+        });
+    }
+
+    Recipes.deleteSaved = async function (id) {
+        const ok = await FrigoScan.confirm('Supprimer', 'Supprimer cette recette sauvegardée ?');
+        if (!ok) return;
+        const data = await FrigoScan.API.del(`/api/recipes/${id}`);
+        if (data.success) {
+            FrigoScan.toast('Recette supprimée.', 'success');
+            loadSavedRecipes();
+        }
+    };
+
+    // Charger les titres sauvegardés au démarrage du module (pour filtrer les suggestions)
+    async function refreshSavedTitles() {
+        try {
+            const data = await FrigoScan.API.get('/api/recipes/');
+            if (data.success) {
+                savedRecipeTitles = new Set((data.recipes || []).map(r => r.title.toLowerCase().trim()));
+                const badge = document.getElementById('badge-saved-recipes');
+                if (badge) badge.textContent = (data.recipes || []).length;
+            }
+        } catch (_) {}
+    }
 
     async function searchRecipes() {
         const query = document.getElementById('recipe-search').value.trim();
@@ -34,16 +123,21 @@
         const btn = document.getElementById('btn-recipe-suggest');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche...'; }
         try {
+            // Charger les titres sauvegardés pour filtrer les doublons
+            await refreshSavedTitles();
             const data = await FrigoScan.API.get('/api/recipes/suggest?max_results=12&min_score=10');
             if (data.success) {
-                if (data.recipes.length === 0) {
-                    FrigoScan.toast(data.message || 'Aucune suggestion trouvée.', 'warning');
+                // Filtrer les recettes déjà sauvegardées
+                let recipes = data.recipes || [];
+                recipes = recipes.filter(r => !savedRecipeTitles.has(r.title.toLowerCase().trim()));
+                if (recipes.length === 0) {
+                    FrigoScan.toast(data.message || 'Aucune nouvelle suggestion trouvée.', 'warning');
                 }
-                renderRecipes(data.recipes || []);
+                renderRecipes(recipes);
             }
         } finally {
             isSuggesting = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-lightbulb"></i> Suggestions du frigo'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic"></i> Suggestions selon mon frigo'; }
         }
     }
 
@@ -226,6 +320,11 @@
 
     Recipes.saveRecipe = async function (btn) {
         const recipe = JSON.parse(btn.dataset.recipe);
+        // Vérifier si déjà sauvegardée
+        if (savedRecipeTitles.has(recipe.title.toLowerCase().trim())) {
+            FrigoScan.toast('Cette recette est déjà dans "Mes recettes" !', 'warning');
+            return;
+        }
         const data = await FrigoScan.API.post('/api/recipes/', {
             title: recipe.title,
             ingredients_json: recipe.ingredients_json || '[]',
@@ -239,7 +338,13 @@
             diet_tags_json: recipe.diet_tags_json || '[]',
         });
         if (data.success) {
-            FrigoScan.toast('Recette sauvegardée !', 'success');
+            FrigoScan.toast('Recette sauvegardée dans "Mes recettes" !', 'success');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-check"></i> Sauvegardée';
+            btn.classList.remove('btn-success');
+            btn.style.background = '#6b7280';
+            btn.style.color = '#fff';
+            await refreshSavedTitles();
         }
     };
 

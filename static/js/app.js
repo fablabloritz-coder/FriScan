@@ -147,7 +147,17 @@ FrigoScan.navigate = function (viewName) {
     // Callbacks d'entrée de vue
     const callbacks = {
         fridge: () => FrigoScan.Fridge && FrigoScan.Fridge.load(),
-        recipes: () => {},
+        recipes: () => {
+            // Charger le badge des recettes sauvegardées
+            if (FrigoScan.Recipes) {
+                FrigoScan.API.get('/api/recipes/').then(data => {
+                    if (data.success) {
+                        const badge = document.getElementById('badge-saved-recipes');
+                        if (badge) badge.textContent = (data.recipes || []).length;
+                    }
+                });
+            }
+        },
         menu: () => FrigoScan.Menus && FrigoScan.Menus.load(),
         seasonal: () => FrigoScan.Seasonal && FrigoScan.Seasonal.load(),
         shopping: () => FrigoScan.Shopping && FrigoScan.Shopping.load(),

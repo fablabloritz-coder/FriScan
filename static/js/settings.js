@@ -6,10 +6,101 @@
     const Settings = {};
     FrigoScan.Settings = Settings;
 
+    // AudioContext partagé pour les aperçus de bip
+    let beepCtx = null;
+    function getBeepCtx() {
+        if (!beepCtx) beepCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return beepCtx;
+    }
+
+    // Jouer un bip selon le type et le volume
+    function playBeepType(type, volume) {
+        try {
+            const ctx = getBeepCtx();
+            const vol = parseFloat(volume) || 0.5;
+            const gain = ctx.createGain();
+            gain.connect(ctx.destination);
+            gain.gain.value = vol;
+
+            if (type === 'standard') {
+                const osc = ctx.createOscillator();
+                osc.connect(gain);
+                osc.frequency.value = 1200;
+                osc.start();
+                osc.stop(ctx.currentTime + 0.12);
+            } else if (type === 'soft') {
+                const osc = ctx.createOscillator();
+                osc.connect(gain);
+                osc.type = 'sine';
+                osc.frequency.value = 800;
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } else if (type === 'double') {
+                const osc1 = ctx.createOscillator();
+                osc1.connect(gain);
+                osc1.frequency.value = 1200;
+                osc1.start();
+                osc1.stop(ctx.currentTime + 0.08);
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                gain2.connect(ctx.destination);
+                gain2.gain.value = vol;
+                osc2.connect(gain2);
+                osc2.frequency.value = 1500;
+                osc2.start(ctx.currentTime + 0.12);
+                osc2.stop(ctx.currentTime + 0.2);
+            } else if (type === 'cash') {
+                const osc = ctx.createOscillator();
+                osc.connect(gain);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(523, ctx.currentTime);
+                osc.frequency.setValueAtTime(659, ctx.currentTime + 0.08);
+                osc.frequency.setValueAtTime(784, ctx.currentTime + 0.16);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.25);
+            }
+        } catch (e) { /* audio non supporté */ }
+    }
+
+    // Exposer pour scanner.js
+    Settings.playBeepType = playBeepType;
+
     Settings.load = async function () {
+        // Attacher les listeners IMMÉDIATEMENT (avant l'API, pour que le bouton save fonctionne même si erreur réseau)
+        document.getElementById('btn-save-settings').onclick = saveSettings;
+        document.getElementById('btn-clear-fridge').onclick = clearFridge;
+        document.getElementById('btn-reset-db').onclick = resetDB;
+
+        // Sliders live (toujours attachés)
+        const scanIntervalSlider = document.getElementById('settings-scan-interval');
+        scanIntervalSlider.oninput = function () {
+            document.getElementById('scan-interval-label').textContent = `${this.value}s`;
+        };
+
+        const beepVolumeSlider = document.getElementById('settings-beep-volume');
+        beepVolumeSlider.oninput = function () {
+            document.getElementById('beep-volume-label').textContent = `${Math.round(this.value * 100)}%`;
+        };
+
+        // Aperçu des bips
+        document.querySelectorAll('.btn-preview-beep').forEach(btn => {
+            btn.onclick = function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const type = this.dataset.beep;
+                const vol = document.getElementById('settings-beep-volume').value;
+                playBeepType(type, vol);
+            };
+        });
+
+        // Charger les données depuis l'API
         const data = await FrigoScan.API.get('/api/settings/');
-        if (!data.success) return;
+        if (!data.success) {
+            console.warn('FrigoScan: Impossible de charger les réglages depuis le serveur');
+            return;
+        }
         const s = data.settings;
+        console.log('FrigoScan: Réglages chargés depuis le serveur', s);
 
         // Régimes
         const diets = Array.isArray(s.diets) ? s.diets : [];
@@ -33,10 +124,17 @@
         document.getElementById('settings-menu-mode').value = s.menu_mode || 'after_shopping';
 
         // Scanner
-        document.getElementById('settings-scan-interval').value = s.scan_interval || 2;
+        scanIntervalSlider.value = s.scan_interval || 2;
         document.getElementById('scan-interval-label').textContent = `${s.scan_interval || 2}s`;
-        document.getElementById('settings-beep-volume').value = s.scan_beep_volume || 0.5;
+        beepVolumeSlider.value = s.scan_beep_volume || 0.5;
+        document.getElementById('beep-volume-label').textContent = `${Math.round((s.scan_beep_volume || 0.5) * 100)}%`;
         document.getElementById('settings-scan-beep').checked = s.scan_beep === true || s.scan_beep === 'true';
+
+        // Type de bip
+        const beepType = s.beep_type || 'standard';
+        const beepRadio = document.querySelector(`input[name="beep-type"][value="${beepType}"]`);
+        if (beepRadio) beepRadio.checked = true;
+
         if (s.default_camera) document.getElementById('settings-default-camera').value = s.default_camera;
         if (s.webcam_resolution) document.getElementById('settings-webcam-resolution').value = s.webcam_resolution;
 
@@ -44,15 +142,24 @@
         const savedTheme = localStorage.getItem('frigoscan-theme') || s.theme || 'light';
         document.documentElement.setAttribute('data-theme', savedTheme);
 
-        // Listeners
-        document.getElementById('settings-scan-interval').oninput = function () {
-            document.getElementById('scan-interval-label').textContent = `${this.value}s`;
-        };
+        // Mettre à jour le localStorage pour les autres modules
+        syncToLocalStorage(s);
 
-        document.getElementById('btn-save-settings').onclick = saveSettings;
-        document.getElementById('btn-clear-fridge').onclick = clearFridge;
-        document.getElementById('btn-reset-db').onclick = resetDB;
+        // Initialiser l'éditeur d'icônes (à chaque load pour garantir FOOD_DB disponible)
+        initIconEditor();
     };
+
+    // Synchroniser les réglages vers localStorage pour les autres modules
+    function syncToLocalStorage(settingsObj) {
+        try {
+            const obj = {};
+            for (const [k, v] of Object.entries(settingsObj)) {
+                obj[k] = v;
+            }
+            localStorage.setItem('frigoscan-settings', JSON.stringify(obj));
+            localStorage.setItem('frigoscan-nb-persons', settingsObj.nb_persons || '4');
+        } catch (e) { /* ignore localStorage errors */ }
+    }
 
     async function saveSettings() {
         const diets = [];
@@ -63,6 +170,10 @@
 
         // Sauvegarder aussi les exclusions custom
         saveCustomDietExclusions();
+
+        // Récupérer le type de bip sélectionné
+        const beepTypeRadio = document.querySelector('input[name="beep-type"]:checked');
+        const beepType = beepTypeRadio ? beepTypeRadio.value : 'standard';
 
         const settings = [
             { key: 'diets', value: JSON.stringify(diets) },
@@ -75,6 +186,7 @@
             { key: 'scan_interval', value: document.getElementById('settings-scan-interval').value },
             { key: 'scan_beep_volume', value: document.getElementById('settings-beep-volume').value },
             { key: 'scan_beep', value: String(document.getElementById('settings-scan-beep').checked) },
+            { key: 'beep_type', value: beepType },
             { key: 'default_camera', value: document.getElementById('settings-default-camera').value },
             { key: 'webcam_resolution', value: document.getElementById('settings-webcam-resolution').value },
             { key: 'theme', value: document.documentElement.getAttribute('data-theme') },
@@ -99,6 +211,7 @@
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
 
         const data = await FrigoScan.API.put('/api/settings/bulk', { settings });
+        console.log('FrigoScan: Sauvegarde réglages →', data);
         if (data.success) {
             // Animation de succès sur le bouton
             saveBtn.innerHTML = '<i class="fas fa-check"></i> Réglages enregistrés !';
@@ -115,8 +228,7 @@
             settings.forEach(s => {
                 try { settingsObj[s.key] = JSON.parse(s.value); } catch { settingsObj[s.key] = s.value; }
             });
-            localStorage.setItem('frigoscan-settings', JSON.stringify(settingsObj));
-            localStorage.setItem('frigoscan-nb-persons', document.getElementById('settings-nb-persons').value);
+            syncToLocalStorage(settingsObj);
 
             // Restaurer le bouton après 2s
             setTimeout(() => {
@@ -336,3 +448,5 @@
         initCustomDiet();
         initIconEditor();
     });
+
+})();
