@@ -302,6 +302,61 @@
         }
     }
 
+    async function generateDemo() {
+        const confirmed = await FrigoScan.confirm(
+            'Générer données de démo',
+            'Cela va ajouter un menu, du frigo, des recettes et des réglages d\'exemple. Continuer ?'
+        );
+        if (!confirmed) return;
+
+        const originalHTML = document.getElementById('btn-generate-demo').innerHTML;
+        const btn = document.getElementById('btn-generate-demo');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+        btn.disabled = true;
+
+        const data = await FrigoScan.API.post('/api/settings/generate-demo');
+        if (data.success) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Généré !';
+            btn.style.background = '#10b981';
+            btn.style.color = '#fff';
+            FrigoScan.toast(data.message, 'success');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            btn.innerHTML = '<i class="fas fa-times"></i> Erreur !';
+            btn.style.background = '#dc2626';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.disabled = false;
+            }, 2000);
+        }
+    }
+
+    async function hardResetDB() {
+        const confirmed = await FrigoScan.confirm(
+            'Réinitialisation complète',
+            'ATTENTION EXTRÊME : Cela va TOUT supprimer (frigo, recettes, réglages) et revenir aux paramètres par défaut.'
+        );
+        if (!confirmed) return;
+        const confirmed2 = await FrigoScan.confirm(
+            'Dernière chance',
+            'Êtes-vous ABSOLUMENT certain ? Cette action est IRRÉVERSIBLE.'
+        );
+        if (!confirmed2) return;
+
+        const data = await FrigoScan.API.post('/api/settings/hard-reset?confirm=true');
+        if (data.success) {
+            FrigoScan.toast('Application complètement réinitialisée. Rechargement...', 'success');
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    // Exposer publiquement
+    Settings.generateDemo = generateDemo;
+    Settings.hardResetDB = hardResetDB;
+
     // Export / Import
     Settings.exportAll = function () {
         window.open('/api/export/all/json', '_blank');
