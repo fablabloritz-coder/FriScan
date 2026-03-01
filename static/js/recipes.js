@@ -8,6 +8,7 @@
     FrigoScan.Recipes = Recipes;
 
     let savedRecipeTitles = new Set(); // Titres des recettes déjà sauvegardées
+    let bannedTitles = new Set(); // Titres des recettes bannies
 
     // Parse les mesures d'ingrédients (ex: "200 g", "1/2 cup", "2 tbsp") en {qty, unit}
     function parseMeasure(measure) {
@@ -52,8 +53,9 @@
             if (e.key === 'Enter') searchRecipes();
         });
         document.getElementById('btn-recipe-suggest').addEventListener('click', suggestRecipes);
+        document.getElementById('btn-recipe-suggest-random').addEventListener('click', suggestRandomRecipes);
 
-        // Onglets recherche / sauvegardées
+        // Onglets recherche / sauvegardées / bannies
         document.querySelectorAll('[data-recipe-tab]').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('[data-recipe-tab]').forEach(b => b.classList.remove('active'));
@@ -61,9 +63,14 @@
                 const tab = btn.dataset.recipeTab;
                 document.getElementById('recipe-tab-search').classList.toggle('hidden', tab !== 'search');
                 document.getElementById('recipe-tab-saved').classList.toggle('hidden', tab !== 'saved');
+                document.getElementById('recipe-tab-banned').classList.toggle('hidden', tab !== 'banned');
                 if (tab === 'saved') loadSavedRecipes();
+                if (tab === 'banned') loadBannedRecipes();
             });
         });
+
+        // Charger les bannies au démarrage
+        refreshBannedTitles();
     });
 
     // ---- Recettes sauvegardées ----
@@ -141,6 +148,78 @@
         } catch (_) {}
     }
 
+    async function refreshBannedTitles() {
+        try {
+            const data = await FrigoScan.API.get('/api/recipes/banned');
+            if (data.success) {
+                bannedTitles = new Set((data.recipes || []).map(r => r.title.toLowerCase().trim()));
+                const badge = document.getElementById('badge-banned-recipes');
+                if (badge) badge.textContent = (data.recipes || []).length;
+            }
+        } catch (_) {}
+    }
+
+    // ---- Recettes bannies ----
+    async function loadBannedRecipes() {
+        const data = await FrigoScan.API.get('/api/recipes/banned');
+        if (!data.success) return;
+        const recipes = data.recipes || [];
+        bannedTitles = new Set(recipes.map(r => r.title.toLowerCase().trim()));
+
+        const badge = document.getElementById('badge-banned-recipes');
+        if (badge) badge.textContent = recipes.length;
+
+        const grid = document.getElementById('banned-recipes-list');
+        const empty = document.getElementById('banned-recipes-empty');
+
+        if (recipes.length === 0) {
+            grid.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        grid.innerHTML = recipes.map(r => {
+            const imgHtml = r.image_url
+                ? `<img class="recipe-card-img" src="${r.image_url}" alt="${r.title}" onerror="this.style.display='none'">`
+                : `<div class="recipe-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--bg-hover);">🚫</div>`;
+            return `
+                <div class="recipe-card banned-recipe-card">
+                    ${imgHtml}
+                    <div class="recipe-card-body">
+                        <div class="recipe-card-title">${r.title}</div>
+                        <div style="margin-top:6px;">
+                            <button class="btn btn-success btn-sm btn-unban" data-id="${r.id}" data-title="${r.title.replace(/"/g, '&quot;')}">
+                                <i class="fas fa-undo"></i> Débannir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        grid.querySelectorAll('.btn-unban').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                const data = await FrigoScan.API.del(`/api/recipes/ban/${id}`);
+                if (data.success) {
+                    FrigoScan.toast(`"${btn.dataset.title}" débannie.`, 'success');
+                    loadBannedRecipes();
+                }
+            });
+        });
+    }
+
+    Recipes.banRecipe = async function (title, imageUrl) {
+        const data = await FrigoScan.API.post('/api/recipes/ban', { title, image_url: imageUrl || '' });
+        if (data.success) {
+            FrigoScan.toast(`"${title}" bannie — elle n'apparaîtra plus dans les suggestions.`, 'success');
+            bannedTitles.add(title.toLowerCase().trim());
+            await refreshBannedTitles();
+        }
+    };
+
     async function searchRecipes() {
         const query = document.getElementById('recipe-search').value.trim();
         if (query.length < 2) {
@@ -164,9 +243,12 @@
             await refreshSavedTitles();
             const data = await FrigoScan.API.get('/api/recipes/suggest?max_results=12&min_score=10');
             if (data.success) {
-                // Filtrer les recettes déjà sauvegardées
+                // Filtrer les recettes déjà sauvegardées + bannies
                 let recipes = data.recipes || [];
-                recipes = recipes.filter(r => !savedRecipeTitles.has(r.title.toLowerCase().trim()));
+                recipes = recipes.filter(r => {
+                    const t = r.title.toLowerCase().trim();
+                    return !savedRecipeTitles.has(t) && !bannedTitles.has(t);
+                });
                 if (recipes.length === 0) {
                     FrigoScan.toast(data.message || 'Aucune nouvelle suggestion trouvée.', 'warning');
                 }
@@ -174,7 +256,33 @@
             }
         } finally {
             isSuggesting = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic"></i> Suggestions selon mon frigo'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-door-open"></i> Suggestions selon mon frigo'; }
+        }
+    }
+
+    let isSuggestingRandom = false;
+    async function suggestRandomRecipes() {
+        if (isSuggestingRandom) return;
+        isSuggestingRandom = true;
+        const btn = document.getElementById('btn-recipe-suggest-random');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche...'; }
+        try {
+            await refreshSavedTitles();
+            const data = await FrigoScan.API.get('/api/recipes/suggest/random?max_results=12');
+            if (data.success) {
+                let recipes = data.recipes || [];
+                recipes = recipes.filter(r => {
+                    const t = r.title.toLowerCase().trim();
+                    return !savedRecipeTitles.has(t) && !bannedTitles.has(t);
+                });
+                if (recipes.length === 0) {
+                    FrigoScan.toast('Aucune suggestion trouvée.', 'warning');
+                }
+                renderRecipes(recipes);
+            }
+        } finally {
+            isSuggestingRandom = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic"></i> Suggestions de recettes'; }
         }
     }
 
@@ -347,9 +455,12 @@
 
             ${recipe.source_url ? `<a href="${recipe.source_url}" target="_blank" class="btn btn-secondary" style="margin-top:16px;"><i class="fas fa-external-link-alt"></i> Voir la source</a>` : ''}
 
-            <div style="margin-top:16px;">
+            <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-success" onclick="FrigoScan.Recipes.saveRecipe(this)" data-recipe='${JSON.stringify(recipe).replace(/'/g, "&apos;")}'>
                     <i class="fas fa-bookmark"></i> Sauvegarder
+                </button>
+                <button class="btn btn-danger btn-ban-recipe" title="Bannir cette recette">
+                    <i class="fas fa-ban"></i> Bannir
                 </button>
             </div>
         `;
@@ -395,6 +506,17 @@
                 FrigoScan.toast(`${added} ingrédient(s) ajouté(s) à la liste de courses`, 'success');
                 addAllBtn.disabled = true;
                 addAllBtn.textContent = '✓ Ajoutés';
+            });
+        }
+
+        // Handler bannir
+        const banBtn = content.querySelector('.btn-ban-recipe');
+        if (banBtn) {
+            banBtn.addEventListener('click', async () => {
+                const ok = await FrigoScan.confirm('Bannir cette recette', `Bannir « ${recipe.title} » ? Elle n'apparaîtra plus dans les suggestions ni le menu de la semaine.`);
+                if (!ok) return;
+                await Recipes.banRecipe(recipe.title, recipe.image_url || '');
+                Recipes.closeDetail();
             });
         }
     }

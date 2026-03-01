@@ -205,13 +205,26 @@
                         focusSlider.min = caps.focusDistance.min;
                         focusSlider.max = caps.focusDistance.max;
                         focusSlider.step = caps.focusDistance.step || 1;
-                        focusSlider.value = (caps.focusDistance.min + caps.focusDistance.max) / 2;
-                        document.getElementById('focus-value').textContent = 'Auto';
+
+                        // Restaurer le focus sauvegardé
+                        const savedFocus = localStorage.getItem('frigoscan-focus');
+                        const savedFocusMode = localStorage.getItem('frigoscan-focus-mode') || 'auto';
+                        if (savedFocus && savedFocusMode === 'manual') {
+                            focusSlider.value = parseFloat(savedFocus);
+                            document.getElementById('focus-value').textContent = parseFloat(savedFocus).toFixed(0);
+                            await track.applyConstraints({
+                                advanced: [{ focusMode: 'manual', focusDistance: parseFloat(savedFocus) }]
+                            });
+                        } else {
+                            focusSlider.value = (caps.focusDistance.min + caps.focusDistance.max) / 2;
+                            document.getElementById('focus-value').textContent = 'Auto';
+                        }
                     } else if (focusContainer) {
                         focusContainer.classList.add('hidden');
                     }
-                    // Focus continu par défaut
-                    if (caps.focusMode && caps.focusMode.includes('continuous')) {
+                    // Focus continu par défaut (sauf si sauvegardé en manuel)
+                    const savedFocusMode = localStorage.getItem('frigoscan-focus-mode') || 'auto';
+                    if (savedFocusMode === 'auto' && caps.focusMode && caps.focusMode.includes('continuous')) {
                         await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
                     }
                 }
@@ -228,6 +241,8 @@
         slider.addEventListener('input', async () => {
             const val = parseFloat(slider.value);
             document.getElementById('focus-value').textContent = val.toFixed(0);
+            localStorage.setItem('frigoscan-focus', String(val));
+            localStorage.setItem('frigoscan-focus-mode', 'manual');
             try {
                 const videoElem = document.querySelector('#scanner-reader video');
                 if (videoElem && videoElem.srcObject) {
@@ -244,6 +259,8 @@
         if (autoBtn) {
             autoBtn.addEventListener('click', async () => {
                 document.getElementById('focus-value').textContent = 'Auto';
+                localStorage.setItem('frigoscan-focus-mode', 'auto');
+                localStorage.removeItem('frigoscan-focus');
                 try {
                     const videoElem = document.querySelector('#scanner-reader video');
                     if (videoElem && videoElem.srcObject) {

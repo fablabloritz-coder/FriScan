@@ -373,13 +373,16 @@
         <!-- RECETTES -->
         <!-- ============================================================ -->
         <section id="view-recipes" class="view">
-            <!-- Onglets Suggestions / Mes recettes -->
+            <!-- Onglets Suggestions / Mes recettes / Bannies -->
             <div class="recipe-tabs">
                 <button class="tab-btn active" data-recipe-tab="search" id="tab-recipe-search">
                     <i class="fas fa-search"></i> Recherche
                 </button>
                 <button class="tab-btn" data-recipe-tab="saved" id="tab-recipe-saved">
                     <i class="fas fa-bookmark"></i> Mes recettes <span id="badge-saved-recipes" class="tab-badge">0</span>
+                </button>
+                <button class="tab-btn" data-recipe-tab="banned" id="tab-recipe-banned">
+                    <i class="fas fa-ban"></i> Bannies <span id="badge-banned-recipes" class="tab-badge">0</span>
                 </button>
             </div>
 
@@ -392,9 +395,14 @@
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
-                    <button id="btn-recipe-suggest" class="btn btn-success btn-lg">
-                        <i class="fas fa-magic"></i> Suggestions selon mon frigo
-                    </button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button id="btn-recipe-suggest" class="btn btn-success">
+                            <i class="fas fa-door-open"></i> Suggestions selon mon frigo
+                        </button>
+                        <button id="btn-recipe-suggest-random" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Suggestions de recettes
+                        </button>
+                    </div>
                 </div>
                 <div id="recipes-list" class="recipes-grid"></div>
                 <div id="recipes-empty" class="empty-state hidden">
@@ -409,6 +417,15 @@
                 <div id="saved-recipes-empty" class="empty-state">
                     <i class="fas fa-bookmark"></i>
                     <p>Aucune recette sauvegardée. Sauvegardez des recettes depuis les suggestions !</p>
+                </div>
+            </div>
+
+            <!-- Onglet Recettes bannies -->
+            <div id="recipe-tab-banned" class="hidden">
+                <div id="banned-recipes-list" class="recipes-grid"></div>
+                <div id="banned-recipes-empty" class="empty-state">
+                    <i class="fas fa-ban"></i>
+                    <p>Aucune recette bannie. Bannissez des recettes depuis leur fiche détaillée pour qu'elles n'apparaissent plus.</p>
                 </div>
             </div>
 
@@ -570,12 +587,15 @@
                     </div>
                 </div>
 
-                <!-- Recettes -->
+                <!-- Recettes & Menu semaine -->
                 <div class="settings-group">
-                    <h3><i class="fas fa-utensils"></i> Recettes</h3>
+                    <h3><i class="fas fa-utensils"></i> Recettes & Menu semaine</h3>
+                    <p class="text-muted" style="margin-bottom:8px;font-size:0.82rem;">
+                        Ces réglages influencent les suggestions de recettes (selon le frigo et de zéro) ainsi que la génération du menu de la semaine.
+                    </p>
                     <div class="checkbox-group">
                         <label class="checkbox-label">
-                            <input type="checkbox" id="settings-prefer-dlc" checked> Privilégier les produits à DLC courte
+                            <input type="checkbox" id="settings-prefer-dlc" checked> Privilégier les produits à DLC courte (suggestions frigo)
                         </label>
                         <label class="checkbox-label">
                             <input type="checkbox" id="settings-prefer-seasonal"> Privilégier les produits de saison

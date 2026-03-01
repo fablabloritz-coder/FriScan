@@ -350,30 +350,74 @@
         const customIcons = JSON.parse(localStorage.getItem('frigoscan-custom-icons') || '{}');
         const catIcons = customIcons[category] || {};
 
-        grid.innerHTML = foods.map(f => {
+        // Construire via DOM pour éviter les problèmes de data URLs dans les attributs HTML
+        grid.innerHTML = '';
+        foods.forEach(f => {
             const currentIcon = catIcons[f.name] || f.emoji;
             const isImage = currentIcon && (currentIcon.startsWith('http') || currentIcon.startsWith('data:') || currentIcon.startsWith('/'));
-            const previewHtml = isImage
-                ? `<img src="${currentIcon}" alt="${f.name}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;">`
-                : `<span style="font-size:1.5rem;">${currentIcon}</span>`;
-            return `
-                <div class="icon-edit-item">
-                    <div class="icon-edit-preview">${previewHtml}</div>
-                    <span class="icon-edit-name">${f.name}</span>
-                    <div class="icon-edit-controls">
-                        <input type="text" class="icon-edit-input" data-cat="${category}" data-name="${f.name}" value="${currentIcon}" placeholder="Emoji ou URL">
-                        <label class="btn btn-sm btn-secondary icon-upload-btn" title="Charger une image">
-                            <i class="fas fa-image"></i>
-                            <input type="file" accept="image/*" class="icon-file-input" data-cat="${category}" data-name="${f.name}" style="display:none;">
-                        </label>
-                    </div>
-                </div>`;
-        }).join('');
 
-        // Handlers pour upload d'image
-        grid.querySelectorAll('.icon-file-input').forEach(fileInput => {
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
+            const item = document.createElement('div');
+            item.className = 'icon-edit-item';
+
+            // Preview
+            const preview = document.createElement('div');
+            preview.className = 'icon-edit-preview';
+            if (isImage) {
+                const img = document.createElement('img');
+                img.src = currentIcon;
+                img.alt = f.name;
+                preview.appendChild(img);
+            } else {
+                preview.innerHTML = `<span>${currentIcon}</span>`;
+            }
+
+            // Name
+            const nameEl = document.createElement('span');
+            nameEl.className = 'icon-edit-name';
+            nameEl.textContent = f.name;
+
+            // Controls
+            const controls = document.createElement('div');
+            controls.className = 'icon-edit-controls';
+
+            const textInput = document.createElement('input');
+            textInput.type = 'text';
+            textInput.className = 'icon-edit-input';
+            textInput.dataset.cat = category;
+            textInput.dataset.name = f.name;
+            textInput.placeholder = '🍎';
+            // Only show the emoji or short URL in text input, not data URLs
+            textInput.value = isImage ? '📷' : currentIcon;
+            textInput.dataset.realValue = currentIcon;
+            textInput.title = isImage ? 'Image chargée — saisir un emoji pour remplacer' : 'Saisir un emoji';
+
+            textInput.addEventListener('input', () => {
+                const val = textInput.value.trim();
+                textInput.dataset.realValue = val;
+                // Update preview
+                const isImg = val && (val.startsWith('http') || val.startsWith('data:') || val.startsWith('/'));
+                if (isImg) {
+                    preview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = val;
+                    img.alt = f.name;
+                    preview.appendChild(img);
+                } else {
+                    preview.innerHTML = `<span>${val || f.emoji}</span>`;
+                }
+            });
+
+            const uploadLabel = document.createElement('label');
+            uploadLabel.className = 'btn btn-sm btn-secondary icon-upload-btn';
+            uploadLabel.title = 'Charger une image';
+            uploadLabel.innerHTML = '<i class="fas fa-image"></i>';
+
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files[0];
                 if (!file) return;
                 if (file.size > 200 * 1024) {
                     FrigoScan.toast('Image trop volumineuse (max 200 Ko).', 'warning');
@@ -382,18 +426,27 @@
                 const reader = new FileReader();
                 reader.onload = () => {
                     const dataUrl = reader.result;
-                    const cat = fileInput.dataset.cat;
-                    const name = fileInput.dataset.name;
-                    // Mettre à jour l'input texte
-                    const textInput = grid.querySelector(`.icon-edit-input[data-cat="${cat}"][data-name="${name}"]`);
-                    if (textInput) textInput.value = dataUrl;
-                    // Mettre à jour la preview
-                    const item = fileInput.closest('.icon-edit-item');
-                    const preview = item.querySelector('.icon-edit-preview');
-                    if (preview) preview.innerHTML = `<img src="${dataUrl}" alt="${name}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;">`;
+                    textInput.value = '📷';
+                    textInput.dataset.realValue = dataUrl;
+                    textInput.title = 'Image chargée — saisir un emoji pour remplacer';
+                    preview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.alt = f.name;
+                    preview.appendChild(img);
+                    FrigoScan.toast(`Image chargée pour "${f.name}"`, 'success');
                 };
                 reader.readAsDataURL(file);
             });
+
+            uploadLabel.appendChild(fileInput);
+            controls.appendChild(textInput);
+            controls.appendChild(uploadLabel);
+
+            item.appendChild(preview);
+            item.appendChild(nameEl);
+            item.appendChild(controls);
+            grid.appendChild(item);
         });
     };
 
@@ -404,9 +457,14 @@
         inputs.forEach(inp => {
             const cat = inp.dataset.cat;
             const name = inp.dataset.name;
-            const val = inp.value.trim();
+            // Use realValue if present (for image data URLs), otherwise the input value
+            const val = (inp.dataset.realValue || inp.value || '').trim();
             if (!customIcons[cat]) customIcons[cat] = {};
-            if (val) customIcons[cat][name] = val;
+            if (val && val !== '📷') {
+                customIcons[cat][name] = val;
+            } else if (val === '📷' && inp.dataset.realValue) {
+                customIcons[cat][name] = inp.dataset.realValue;
+            }
         });
 
         localStorage.setItem('frigoscan-custom-icons', JSON.stringify(customIcons));

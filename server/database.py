@@ -126,6 +126,13 @@ CREATE TABLE IF NOT EXISTS stock_minimums (
     min_quantity REAL DEFAULT 1,
     unit TEXT DEFAULT 'unité'
 );
+
+CREATE TABLE IF NOT EXISTS banned_recipes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE,
+    image_url TEXT DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 DEFAULT_SETTINGS = {

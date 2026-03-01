@@ -86,6 +86,10 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
         custom_excl_row = db.execute("SELECT value FROM settings WHERE key='custom_exclusions'").fetchone()
         custom_exclusions = json.loads(custom_excl_row["value"]) if custom_excl_row else []
 
+        # Recettes bannies
+        banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
+        banned_titles = set(r["title"] for r in banned_rows)
+
         from server.services.recipe_service import (
             load_local_recipes, compute_match_score, filter_by_diet,
             get_random_recipes, search_recipes_online
@@ -104,10 +108,15 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
 
             # Si le frigo est trop vide, compléter avec des recettes en ligne
             if fridge_items:
-                fridge_names = [item["name"] for item in fridge_items[:5]]
-                for name in fridge_names[:3]:
+                fridge_names = [item["name"] for item in fridge_items[:8]]
+                import random as rnd
+                rnd.shuffle(fridge_names)
+                for name in fridge_names[:4]:
                     online = await search_recipes_online(name)
                     all_recipes.extend(online)
+                # Ajouter aussi des recettes aléatoires pour plus de variété
+                extra = await get_random_recipes(10)
+                all_recipes.extend(extra)
 
             # Filtrer par régime
             all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
@@ -125,7 +134,12 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
             all_recipes.extend(random_recipes)
 
             # Chercher aussi des termes variés pour plus de diversité
-            variety_terms = ["poulet", "salade", "pâtes", "soupe", "poisson", "riz", "légumes"]
+            variety_terms = [
+                "poulet", "salade", "pâtes", "soupe", "poisson", "riz", "légumes",
+                "curry", "tarte", "gratin", "pizza", "steak", "cake", "pie",
+                "noodle", "sandwich", "sushi", "vegetable", "seafood", "dessert",
+                "wrap", "grill", "roast", "pancake", "omelette", "quiche",
+            ]
             import random as rnd
             rnd.shuffle(variety_terms)
             for term in variety_terms[:4]:
@@ -139,7 +153,7 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
         unique_recipes = []
         for r in all_recipes:
             title = r.get("title", "").lower().strip()
-            if title and title not in seen_titles:
+            if title and title not in seen_titles and title not in banned_titles:
                 seen_titles.add(title)
                 unique_recipes.append(r)
         all_recipes = unique_recipes
