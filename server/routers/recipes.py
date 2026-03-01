@@ -8,12 +8,23 @@ from server.models import RecipeCreate
 from server.services.recipe_service import (
     search_recipes_online, get_random_recipes, compute_match_score,
     filter_by_diet, suggest_alternatives, load_local_recipes,
-    get_recipes_by_category, RECIPE_CATEGORIES_FR
+    get_recipes_by_category, RECIPE_CATEGORIES_FR,
 )
 import json
 import random as rnd
 
 router = APIRouter(prefix="/api/recipes", tags=["Recettes"])
+
+
+def _get_target_servings(db) -> int:
+    """Récupère le nombre de personnes configuré dans les réglages (défaut: 4)."""
+    try:
+        row = db.execute("SELECT value FROM settings WHERE key='nb_persons'").fetchone()
+        if row:
+            return int(row["value"])
+    except Exception:
+        pass
+    return 4
 
 
 @router.get("/")
@@ -61,21 +72,37 @@ async def suggest_recipes(
         banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
         banned_titles = set(r["title"] for r in banned_rows)
 
-        # Récupérer recettes locales (base + fichier)
-        db_recipes = rows_to_list(db.execute("SELECT * FROM recipes").fetchall())
-        local_recipes = load_local_recipes()
-        all_recipes = db_recipes + local_recipes
+        # Nombre de personnes
+        target_servings = _get_target_servings(db)
 
-        # Si pas assez de recettes locales, chercher en ligne
-        if len(all_recipes) < 20:
-            fridge_names = [item["name"] for item in fridge_items[:8]]
-            rnd.shuffle(fridge_names)
-            for name in fridge_names[:4]:
-                online = await search_recipes_online(name)
-                all_recipes.extend(online)
-            # Ajouter quelques recettes aléatoires pour diversité
-            extra_random = await get_random_recipes(8)
-            all_recipes.extend(extra_random)
+        # Flux stable: API externe d'abord, fallback local ensuite
+        db_recipes = rows_to_list(db.execute("SELECT * FROM recipes").fetchall())
+        all_recipes = list(db_recipes)
+
+        fridge_names = [item["name"] for item in fridge_items[:10]]
+        rnd.shuffle(fridge_names)
+
+        for name in fridge_names[:5]:
+            online = await search_recipes_online(name, target_servings=target_servings)
+            all_recipes.extend(online)
+
+        extra_random = await get_random_recipes(10, target_servings=target_servings)
+        all_recipes.extend(extra_random)
+
+        if len(all_recipes) < 30:
+            local_recipes = load_local_recipes()
+            all_recipes.extend(local_recipes)
+
+        # Dédupliquer par titre
+        deduped = []
+        seen_titles = set()
+        for recipe in all_recipes:
+            title = (recipe.get("title") or "").strip().lower()
+            if not title or title in seen_titles:
+                continue
+            seen_titles.add(title)
+            deduped.append(recipe)
+        all_recipes = deduped
 
         # Filtrer par régime
         all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
@@ -96,7 +123,8 @@ async def suggest_recipes(
         # Filtrer les recettes bannies
         scored = [r for r in scored if r.get("title", "").lower().strip() not in banned_titles]
 
-        return {"success": True, "recipes": scored[:max_results]}
+        top_recipes = scored[:max_results]
+        return {"success": True, "recipes": top_recipes}
     finally:
         db.close()
 
@@ -113,6 +141,9 @@ async def search_recipes(q: str = ""):
         banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
         banned_titles = set(r["title"] for r in banned_rows)
 
+        # Nombre de personnes
+        target_servings = _get_target_servings(db)
+
         # Recherche locale
         local = db.execute(
             "SELECT * FROM recipes WHERE LOWER(title) LIKE ? OR LOWER(ingredients_json) LIKE ?",
@@ -121,7 +152,7 @@ async def search_recipes(q: str = ""):
         results = rows_to_list(local)
 
         # Recherche en ligne
-        online = await search_recipes_online(q)
+        online = await search_recipes_online(q, target_servings=target_servings)
         results.extend(online)
 
         # Filtrer les bannies
@@ -154,8 +185,11 @@ async def suggest_random_recipes(max_results: int = 12):
         banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
         banned_titles = set(r["title"] for r in banned_rows)
 
+        # Nombre de personnes
+        target_servings = _get_target_servings(db)
+
         # Récupérer des recettes aléatoires en ligne
-        all_recipes = await get_random_recipes(20)
+        all_recipes = await get_random_recipes(20, target_servings=target_servings)
 
         # Ajouter de la variété avec des termes de recherche
         variety_terms = [
@@ -166,7 +200,7 @@ async def suggest_random_recipes(max_results: int = 12):
         ]
         rnd.shuffle(variety_terms)
         for term in variety_terms[:3]:
-            online = await search_recipes_online(term)
+            online = await search_recipes_online(term, target_servings=target_servings)
             all_recipes.extend(online)
 
         # Filtrer par régime
@@ -181,8 +215,37 @@ async def suggest_random_recipes(max_results: int = 12):
                 seen.add(title)
                 unique.append(r)
 
-        rnd.shuffle(unique)
-        return {"success": True, "recipes": unique[:max_results]}
+        # Garder uniquement des recettes avec détails exploitables
+        detailed = []
+        for recipe in unique:
+            has_ingredients = False
+            try:
+                ingredients = json.loads(recipe.get("ingredients_json", "[]"))
+                has_ingredients = isinstance(ingredients, list) and len(ingredients) > 0
+            except Exception:
+                has_ingredients = False
+
+            instructions = (recipe.get("instructions") or "").strip().lower()
+            has_real_instructions = bool(instructions) and "voir le site marmiton" not in instructions
+
+            if has_ingredients or has_real_instructions:
+                detailed.append(recipe)
+
+        # Compléter avec recettes locales si nécessaire
+        if len(detailed) < max_results:
+            local_recipes = load_local_recipes()
+            seen = {r.get("title", "").strip().lower() for r in detailed}
+            rnd.shuffle(local_recipes)
+            for recipe in local_recipes:
+                key = recipe.get("title", "").strip().lower()
+                if key and key not in seen:
+                    detailed.append(recipe)
+                    seen.add(key)
+                if len(detailed) >= max_results:
+                    break
+
+        rnd.shuffle(detailed)
+        return {"success": True, "recipes": detailed[:max_results]}
     finally:
         db.close()
 
@@ -252,7 +315,10 @@ async def suggest_by_category(category: str, max_results: int = 12):
         banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
         banned_titles = set(r["title"] for r in banned_rows)
 
-        recipes = await get_recipes_by_category(category, max_results=max_results + 5)
+        # Nombre de personnes
+        target_servings = _get_target_servings(db)
+
+        recipes = await get_recipes_by_category(category, max_results=max_results + 5, target_servings=target_servings)
 
         # Filtrer par régime
         recipes = filter_by_diet(recipes, diets, allergens, custom_exclusions)
@@ -292,10 +358,13 @@ async def suggest_by_multiple_categories(categories: list = None, max_results: i
         banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
         banned_titles = set(r["title"] for r in banned_rows)
 
+        # Nombre de personnes
+        target_servings = _get_target_servings(db)
+
         # Recuperer recettes pour chaque categorie
         all_recipes = []
         for category in categories:
-            recipes = await get_recipes_by_category(category, max_results=max_results + 10)
+            recipes = await get_recipes_by_category(category, max_results=max_results + 10, target_servings=target_servings)
             all_recipes.extend(recipes)
 
         # Filtrer par régime

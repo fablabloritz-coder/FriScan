@@ -1,6 +1,6 @@
 """
 FrigoScan — Service de recettes.
-Recherche de recettes en ligne (Marmiton API).
+Recherche de recettes en ligne (TheMealDB + fallback Marmiton).
 Calcul du score de correspondance avec le contenu du frigo.
 """
 
@@ -238,18 +238,166 @@ INGREDIENT_FR = {
     "artichoke": "artichaut", "beetroot": "betterave", "radish": "radis",
     "fennel": "fenouil", "endive": "endive",
     "tofu": "tofu", "tempeh": "tempeh",
+    "lemongrass": "citronnelle", "lemongrass stalk": "tige de citronnelle", "lemongrass stalks": "tiges de citronnelle",
+    "lime juice": "jus de citron vert", "lime zest": "zeste de citron vert",
+    "coriander leaves": "feuilles de coriandre", "coriander seeds": "graines de coriandre",
+    "five spice powder": "cinq épices", "five-spice": "cinq épices", "chinese five spice powder": "cinq épices",
+    "white bread": "pain blanc", "wheat bread": "pain complet",
+    "rice noodles": "nouilles de riz", "egg noodles": "nouilles aux œufs",
+    "red wine vinegar": "vinaigre de vin rouge", "white vinegar": "vinaigre blanc",
+    "lime leaves": "feuilles de citron vert", "thai basil": "basilic thaï",
+    "thai red curry paste": "pâte de curry rouge thaï", "thai green curry paste": "pâte de curry vert thaï",
+    "allspice": "piment de la Jamaïque", "allspices": "piment de la Jamaïque",
+    "basil leaves": "feuilles de basilic", "cilantro leaves": "feuilles de coriandre", "mint leaves": "feuilles de menthe",
+    "zest of": "zeste de", "juice of": "jus de", "for brushing": "pour badigeonner",
+    "egg plants": "aubergines", "ground meat": "viande moulue", "unwaxed lemon": "citron non ciré",
+    "unwaxed lime": "citron vert non ciré", "handful": "poignée",
 }
 
 def _translate_ingredient_name(name_en: str) -> str:
     """Traduit un nom d'ingrédient anglais en français."""
-    key = name_en.lower().strip()
+    import re
+
+    key = (name_en or "").lower().strip()
+    if not key:
+        return ""
+
+    prep_map = {
+        "finely chopped": "finement haché",
+        "roughly chopped": "grossièrement haché",
+        "finely sliced": "finement tranché",
+        "chopped": "haché",
+        "minced": "émincé",
+        "diced": "en dés",
+        "sliced": "tranché",
+        "crushed": "écrasé",
+        "grated": "râpé",
+        "ground": "moulu",
+    }
+
+    # Traduction directe prioritaire
+    phrase_overrides = {
+        "egg white": "blanc d'œuf",
+        "egg whites": "blancs d'œufs",
+        "red wine vinegar": "vinaigre de vin rouge",
+        "black beans": "haricots noirs",
+        "white beans": "haricots blancs",
+        "black olives": "olives noires",
+        "green chilli": "piment vert",
+        "green chilies": "piments verts",
+        "red chilli": "piment rouge",
+        "red chilli powder": "poudre de piment rouge",
+        "white bread": "pain blanc",
+        "desiccated coconut": "noix de coco râpée",
+        "romano pepper": "poivron romano",
+        "king prawns": "crevettes royales",
+        "raw king prawns": "crevettes royales crues",
+        "squid": "calamar",
+    }
+
+    if key in phrase_overrides:
+        return phrase_overrides[key]
+
     if key in INGREDIENT_FR:
         return INGREDIENT_FR[key]
-    # Essayer sans 's' final
     if key.endswith('s') and key[:-1] in INGREDIENT_FR:
         return INGREDIENT_FR[key[:-1]]
-    # Retourner tel quel si pas de traduction
-    return name_en
+
+    # Extraire un qualificatif culinaire éventuel
+    prep_found = ""
+    base = key
+    for prep_en in sorted(prep_map.keys(), key=len, reverse=True):
+        if prep_en in base:
+            prep_found = prep_en
+            base = re.sub(rf"\b{re.escape(prep_en)}\b", "", base).strip()
+            break
+
+    base = re.sub(r"\s+", " ", base).strip(" ,.-")
+    if not base:
+        base = key
+
+    # Re-traduction exacte sur base nettoyée
+    if base in INGREDIENT_FR:
+        base_fr = INGREDIENT_FR[base]
+    elif base.endswith('s') and base[:-1] in INGREDIENT_FR:
+        base_fr = INGREDIENT_FR[base[:-1]]
+    else:
+        # Fallback mot à mot (utile pour "red onion", "onions", etc.)
+        token_overrides = {
+            "large": "grand",
+            "medium": "moyen",
+            "small": "petit",
+            "red": "rouge",
+            "green": "vert",
+            "white": "blanc",
+            "black": "noir",
+            "raw": "cru",
+            "dried": "séché",
+            "desiccated": "râpé",
+            "king": "royal",
+        }
+
+        translated_words = []
+        for w in base.split():
+            w_clean = w.strip(" ,.-")
+            if not w_clean:
+                continue
+            if w_clean in token_overrides:
+                translated_words.append(token_overrides[w_clean])
+            elif w_clean in INGREDIENT_FR:
+                translated_words.append(INGREDIENT_FR[w_clean])
+            elif w_clean.endswith('s') and w_clean[:-1] in INGREDIENT_FR:
+                translated_words.append(INGREDIENT_FR[w_clean[:-1]])
+            else:
+                translated_words.append(w_clean)
+
+        # Réordonner légèrement pour un français plus naturel
+        size_tokens = {"petit", "petite", "petits", "petites", "grand", "grande", "grands", "grandes", "moyen", "moyenne", "moyens", "moyennes"}
+        color_state_tokens = {"rouge", "rouges", "vert", "verte", "verts", "vertes", "blanc", "blanche", "blancs", "blanches", "noir", "noire", "noirs", "noires", "cru", "crue", "crus", "crues", "séché", "séchée", "séchés", "séchées", "râpé", "râpée", "râpés", "râpées"}
+        if len(translated_words) >= 2:
+            core = [w for w in translated_words if w not in size_tokens and w not in color_state_tokens]
+            sizes = [w for w in translated_words if w in size_tokens]
+            states = [w for w in translated_words if w in color_state_tokens]
+            if core:
+                translated_words = sizes + core + states
+
+        base_fr = " ".join(translated_words).strip() or name_en
+
+    if not prep_found:
+        return base_fr
+
+    prep_fr = prep_map[prep_found]
+
+    def _agree_prep(prep_text: str, noun_fr: str) -> str:
+        import re
+        p = prep_text
+        n = (noun_fr or "").strip().lower()
+
+        is_plural = n.endswith("s")
+        is_feminine = n.endswith("e") or n.endswith("es")
+
+        endings = {
+            "é": ("é", "ée", "és", "ées"),
+            "u": ("u", "ue", "us", "ues"),
+        }
+
+        for stem_end, forms in endings.items():
+            masc_s, fem_s, masc_p, fem_p = forms
+            if re.search(rf"{stem_end}$", p):
+                if is_feminine and is_plural:
+                    return re.sub(rf"{stem_end}$", fem_p, p)
+                if is_feminine:
+                    return re.sub(rf"{stem_end}$", fem_s, p)
+                if is_plural:
+                    return re.sub(rf"{stem_end}$", masc_p, p)
+                return p
+        return p
+
+    prep_fr = _agree_prep(prep_fr, base_fr)
+    out = f"{base_fr} {prep_fr}".strip()
+    out = re.sub(r"\s+", " ", out)
+    out = re.sub(r"\bd\'\s+", "d'", out)
+    return out
 
 
 def _translate_measure(measure_en: str) -> str:
@@ -259,20 +407,85 @@ def _translate_measure(measure_en: str) -> str:
     m = measure_en.strip().lower()
     # Mapping des unités
     units_map = {
-        'teaspoon': 'c. à café', 'teaspoons': 'c. à café', 'tsp': 'c. à café',
+        'teaspoon': 'c. à café', 'teaspoons': 'c. à café', 'tsp': 'c. à café', 'tsp.': 'c. à café',
         'tablespoon': 'c. à soupe', 'tablespoons': 'c. à soupe', 'tbsp': 'c. à soupe',
-        'cup': 'tasse', 'cups': 'tasse',
-        'ounce': 'once', 'ounces': 'once', 'oz': 'once',
-        'pound': 'livre', 'pounds': 'livre', 'lb': 'livre', 'lbs': 'livre',
-        'gram': 'g', 'grams': 'g', 'g': 'g', 'gr': 'g',
+        'tbs': 'c. à soupe', 'tbsp.': 'c. à soupe', 'tbs.': 'c. à soupe',
+        'tblsp': 'c. à soupe', 'tblsp.': 'c. à soupe',
+        'tbls': 'c. à soupe', 'tbls.': 'c. à soupe',
+        'cup': 'tasse', 'cups': 'tasse', 'cup.': 'tasse', 'c': 'tasse',
+        'quart': 'quart', 'quarts': 'quarts', 'qt': 'quart', 'qt.': 'quart',
+        'ounce': 'once', 'ounces': 'once', 'oz': 'once', 'oz.': 'once',
+        'pound': 'livre', 'pounds': 'livre', 'lb': 'livre', 'lbs': 'livre', 'lbs.': 'livre',
+        'gram': 'g', 'grams': 'g', 'g': 'g', 'gr': 'g', 'gr.': 'g',
         'kilogram': 'kg', 'kg': 'kg',
-        'milliliter': 'mL', 'milliliters': 'mL', 'ml': 'mL',
-        'centiliter': 'cL', 'centiliters': 'cL', 'cl': 'cL',
-        'liter': 'L', 'liters': 'L', 'l': 'L',
-        'pinch': 'pincée', 'pinches': 'pincée',
+        'milliliter': 'mL', 'milliliters': 'mL', 'ml': 'mL', 'ml.': 'mL',
+        'centiliter': 'cL', 'centiliters': 'cL', 'cl': 'cL', 'cl.': 'cL',
+        'liter': 'L', 'liters': 'L', 'l': 'L', 'l.': 'L',
+        'pinch': 'pincée', 'pinches': 'pincée', 'pinch.': 'pincée',
         'dash': 'trait', 'dashes': 'trait',
         'splash': 'trait', 'splashes': 'trait',
+        'clove': 'gousse', 'cloves': 'gousses', 'clove.': 'gousse', 'cloves.': 'gousses',
+        'leaf': 'feuille', 'leaves': 'feuilles', 'leaf.': 'feuille', 'leaves.': 'feuilles',
+        'sprinkling': 'pincée', 'sprinkle': 'pincée', 'sprinkles': 'pincée',
+        'topping': 'garniture', 'toppings': 'garniture',
     }
+    pluralizable_units = {'tasse', 'once', 'livre', 'pincée', 'trait', 'gousse', 'quart'}
+    phrase_map = {
+        'finely chopped': 'finement haché',
+        'roughly chopped': 'grossièrement haché',
+        'finely sliced': 'finement tranché',
+        'chopped': 'haché',
+        'minced': 'émincé',
+        'diced': 'en dés',
+        'sliced': 'tranché',
+        'crushed': 'écrasé',
+        'grated': 'râpé',
+        'ground': 'moulu',
+        'cloves minced': 'gousses émincées',
+        'clove minced': 'gousse émincée',
+        'cloves chopped': 'gousses hachées',
+        'clove chopped': 'gousse hachée',
+        'to serve': 'à servir',
+        'to taste': 'selon le goût',
+        'for brushing': 'pour badigeonner',
+        'juice of': 'jus de',
+        'zest of': 'zeste de',
+    }
+
+    def _parse_qty(text: str) -> float | None:
+        from fractions import Fraction
+        try:
+            q = (text or "").strip()
+            if not q:
+                return None
+            if ' ' in q and '/' in q:
+                main, frac = q.split(' ', 1)
+                return float(main) + float(Fraction(frac))
+            if '/' in q:
+                return float(Fraction(q))
+            return float(q.replace(',', '.'))
+        except Exception:
+            return None
+
+    def _translate_unit_phrase(text: str) -> str:
+        import re
+        out = (text or "").strip().lower()
+        if not out:
+            return out
+
+        # D'abord les expressions multi-mots
+        for src in sorted(phrase_map.keys(), key=len, reverse=True):
+            out = re.sub(rf"\b{re.escape(src)}\b", phrase_map[src], out)
+
+        # Puis mot à mot pour les unités
+        words = []
+        for w in out.split():
+            words.append(units_map.get(w, w))
+        translated = " ".join(words).strip()
+        translated = re.sub(r"\s+", " ", translated)
+        translated = re.sub(r"\bd\'\s+", "d'", translated)
+        return translated
+
     # Chercher l'unité (la partie sans les chiffres)
     import re
     match = re.match(r'^([\d.,/\s]*)(.*)$', measure_en.strip())
@@ -281,7 +494,12 @@ def _translate_measure(measure_en: str) -> str:
         unit_part = match.group(2).strip().lower()  # e.g. "cup", "ml"
         
         # Traduire l'unité
-        translated_unit = units_map.get(unit_part, unit_part)
+        translated_unit = _translate_unit_phrase(unit_part)
+
+        # Pluralisation simple des unités françaises
+        qty_value = _parse_qty(qty_part)
+        if qty_value is not None and qty_value > 1 and translated_unit in pluralizable_units and not translated_unit.endswith('s'):
+            translated_unit = f"{translated_unit}s"
         
         # Recombiner
         if qty_part:
@@ -289,6 +507,114 @@ def _translate_measure(measure_en: str) -> str:
         else:
             return translated_unit
     return measure_en
+
+
+def _adapt_and_translate_measure(measure_en: str, ratio: float) -> str:
+    """Adapte les quantités selon le ratio et traduit les unités.
+    
+    Args:
+        measure_en: Mesure originale en anglais (ex: "2 cups", "1/2 tsp")
+        ratio: Ratio d'adaptation (ex: 1.5 pour passer de 4 à 6 personnes)
+    """
+    if not measure_en or not measure_en.strip():
+        return ""
+    
+    import re
+    from fractions import Fraction
+    
+    # Extraire quantité et unité
+    match = re.match(r'^([\d.,/\s]+)(.*)$', measure_en.strip())
+    if not match:
+        # Pas de quantité numérique, juste traduire l'unité/texte
+        return _translate_measure(measure_en)
+    
+    qty_str = match.group(1).strip()
+    unit_str = match.group(2).strip()
+    
+    try:
+        # Gérer les fractions (1/2, 1/4, etc.)
+        if ' ' in qty_str and '/' in qty_str:
+            # Ex: "1 1/2"
+            main, frac = qty_str.split(' ', 1)
+            qty = float(main) + float(Fraction(frac))
+        elif '/' in qty_str:
+            qty = float(Fraction(qty_str))
+        else:
+            qty = float(qty_str.replace(',', '.'))
+        
+        # Appliquer le ratio
+        adapted_qty = qty * ratio
+        
+        # Formater joliment
+        if adapted_qty == int(adapted_qty):
+            qty_formatted = str(int(adapted_qty))
+        else:
+            # Arrondir à 1 décimale si proche
+            if abs(adapted_qty - round(adapted_qty, 1)) < 0.01:
+                qty_formatted = f"{adapted_qty:.1f}"
+            else:
+                qty_formatted = f"{adapted_qty:.2f}"
+        
+        # Traduire l'unité
+        measure_adapted = f"{qty_formatted} {unit_str}"
+        return _translate_measure(measure_adapted)
+        
+    except (ValueError, ZeroDivisionError):
+        # Si échec du parsing, juste traduire tel quel
+        return _translate_measure(measure_en)
+
+
+def _detect_diet_tags(meal: dict, ingredients_lower: list[str]) -> list[str]:
+    """Détecte les régimes alimentaires compatibles avec une recette TheMealDB.
+    
+    Args:
+        meal: Données de la recette
+        ingredients_lower: Liste des ingrédients en minuscules
+    
+    Returns:
+        Liste des tags de régime (ex: ["végétarien", "sans_gluten"])
+    """
+    diet_tags = []
+    
+    # Vérifier si la recette contient de la viande/poisson
+    meat_keywords = [
+        "chicken", "beef", "pork", "lamb", "turkey", "duck", "veal",
+        "bacon", "ham", "sausage", "meat", "steak", "ground beef",
+        "fish", "salmon", "tuna", "cod", "shrimp", "prawn", "crab",
+        "lobster", "mussel", "oyster", "seafood", "anchovy"
+    ]
+    
+    has_meat = any(meat in ing for ing in ingredients_lower for meat in meat_keywords)
+    
+    # Vérifier les produits laitiers
+    dairy_keywords = ["milk", "cream", "cheese", "butter", "yogurt", "yoghurt"]
+    has_dairy = any(dairy in ing for ing in ingredients_lower for dairy in dairy_keywords)
+    
+    # Vérifier les œufs
+    has_eggs = any("egg" in ing for ing in ingredients_lower)
+    
+    # Vérifier le miel
+    has_honey = any("honey" in ing for ing in ingredients_lower)
+    
+    # Classification
+    if not has_meat:
+        diet_tags.append("végétarien")
+        
+        if not has_dairy and not has_eggs and not has_honey:
+            diet_tags.append("végan")
+    
+    # Vérifier sans gluten (pas de farine, pain, pâtes)
+    gluten_keywords = ["flour", "bread", "pasta", "wheat", "noodle", "spaghetti", "couscous"]
+    has_gluten = any(gluten in ing for ing in ingredients_lower for gluten in gluten_keywords)
+    
+    if not has_gluten:
+        diet_tags.append("sans_gluten")
+    
+    # Vérifier sans lactose
+    if not has_dairy:
+        diet_tags.append("sans_lactose")
+    
+    return diet_tags
 
 
 async def _translate_instructions_full(text: str) -> str:
@@ -423,7 +749,7 @@ RECIPE_CATEGORIES_FR = [
 ]
 
 
-async def get_recipes_by_category(category: str, max_results: int = 12) -> list[dict]:
+async def get_recipes_by_category(category: str, max_results: int = 12, target_servings: int = 4) -> list[dict]:
     """Récupère des recettes par catégorie (filter TheMealDB), recherche ou multi-recherche."""
     import random as rnd
 
@@ -432,7 +758,7 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
     cat_type = (cat_info or {}).get("type", "filter")
 
     if cat_type == "search":
-        results = await search_recipes_online(category)
+        results = await search_recipes_online(category, target_servings=target_servings)
         rnd.shuffle(results)
         return results[:max_results]
 
@@ -441,7 +767,7 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
         all_recipes = []
         rnd.shuffle(terms)
         for term in terms[:4]:
-            results = await search_recipes_online(term)
+            results = await search_recipes_online(term, target_servings=target_servings)
             all_recipes.extend(results)
         rnd.shuffle(all_recipes)
         seen = set()
@@ -461,12 +787,12 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
             if resp.status_code != 200:
                 # Fallback : chercher par mot-clé
                 logger.info(f"Catégorie {category} ne retourne rien, fallback recherche")
-                return await search_recipes_online(category)
+                return await search_recipes_online(category, target_servings=target_servings)
             data = resp.json()
             meals = data.get("meals") or []
             if not meals:
                 # Fallback : chercher par mot-clé
-                return await search_recipes_online(category)
+                return await search_recipes_online(category, target_servings=target_servings)
             rnd.shuffle(meals)
             meals = meals[:max_results + 5]  # Charger plus au cas où certains échouent
             for meal in meals:
@@ -479,7 +805,7 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
                         detail_data = detail_resp.json()
                         detail_meals = detail_data.get("meals") or []
                         if detail_meals:
-                            recipe = _normalize_mealdb(detail_meals[0])
+                            recipe = _normalize_mealdb(detail_meals[0], target_servings=target_servings)
                             recipe = await _translate_recipe_async(recipe)
                             recipes.append(recipe)
                     if len(recipes) >= max_results:
@@ -491,7 +817,7 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
         logger.warning(f"Erreur recettes par catégorie {category}: {e}")
         # Dernière tentative : recherche par mot-clé
         try:
-            return await search_recipes_online(category)
+            return await search_recipes_online(category, target_servings=target_servings)
         except Exception:
             pass
     return recipes[:max_results]
@@ -511,6 +837,10 @@ def _normalize_marmiton_to_recipe_format(recipe: dict) -> dict:
     steps = recipe.get("steps", [])
     instructions = "\n".join([f"{i+1}. {step}" for i, step in enumerate(steps)]) if steps else ""
     
+    tags = recipe.get("tags", [])
+    raw_image_url = (recipe.get("image_url") or "").strip()
+    image_url = raw_image_url if raw_image_url.startswith("http") else ""
+
     return {
         "title": recipe.get("title", ""),
         "ingredients_json": json.dumps(ingredients),
@@ -519,8 +849,8 @@ def _normalize_marmiton_to_recipe_format(recipe: dict) -> dict:
         "cook_time": recipe.get("cook_time", 30),
         "servings": recipe.get("servings", 4),
         "source_url": "",
-        "image_url": "",
-        "tags_json": json.dumps(recipe.get("tags", [])),
+        "image_url": image_url,
+        "tags_json": json.dumps(tags),
         "diet_tags_json": json.dumps(["végétarien"]),  # Les recettes Marmiton sont toutes végétariennes
     }
 
@@ -553,54 +883,396 @@ def load_local_recipes() -> list[dict]:
     return recipes
 
 
-async def search_recipes_online(query: str) -> list[dict]:
-    """Recherche de recettes via Marmiton API."""
+async def search_recipes_online(query: str, target_servings: int = 4) -> list[dict]:
+    """Recherche de recettes via TheMealDB (fallback Marmiton)."""
+    query = (query or "").strip()
+    if not query:
+        return []
+
+    def _query_candidates(raw_query: str) -> list[str]:
+        candidates: list[str] = []
+        seen: set[str] = set()
+
+        def add(value: str):
+            value = (value or "").strip()
+            if not value:
+                return
+            key = value.lower()
+            if key in seen:
+                return
+            seen.add(key)
+            candidates.append(value)
+
+        add(raw_query)
+
+        q_lower = raw_query.lower().strip()
+        add(CATEGORY_EN.get(raw_query, ""))
+        add(CATEGORY_EN.get(q_lower.capitalize(), ""))
+
+        # Traduction FR -> EN simple basée sur le dictionnaire d'ingrédients existant.
+        fr_to_en = {fr.lower(): en for en, fr in INGREDIENT_FR.items()}
+        add(fr_to_en.get(q_lower, ""))
+
+        # Heuristique: supprimer pluriel simple.
+        if q_lower.endswith("s"):
+            singular = q_lower[:-1]
+            add(fr_to_en.get(singular, ""))
+
+        return candidates
+
     try:
-        recipes = await search_marmiton_recipes(query)
-        logger.info(f"Marmiton: {len(recipes)} recettes trouvées pour '{query}'")
-        return recipes
+        recipes: list[dict] = []
+        seen_titles: set[str] = set()
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            for candidate in _query_candidates(query):
+                resp = await client.get(MEALDB_SEARCH, params={"s": candidate})
+                if resp.status_code != 200:
+                    continue
+
+                data = resp.json()
+                meals = data.get("meals") or []
+                for meal in meals:
+                    normalized = _normalize_mealdb(meal, target_servings=target_servings)
+                    title_key = (normalized.get("title") or "").strip().lower()
+                    if not title_key or title_key in seen_titles:
+                        continue
+                    seen_titles.add(title_key)
+                    recipes.append(normalized)
+
+                if len(recipes) >= 24:
+                    break
+
+        if recipes:
+            logger.info(f"TheMealDB: {len(recipes)} recettes trouvées pour '{query}'")
+            return recipes
     except Exception as e:
-        logger.warning(f"Erreur recherche recettes Marmiton: {e}")
+        logger.warning(f"Erreur recherche recettes TheMealDB: {e}")
+
+    try:
+        fallback = await search_marmiton_recipes(query)
+        logger.info(f"Fallback Marmiton: {len(fallback)} recettes trouvées pour '{query}'")
+        return fallback
+    except Exception as e:
+        logger.warning(f"Erreur fallback Marmiton: {e}")
         return []
 
 
-async def get_random_recipes(count: int = 5) -> list[dict]:
-    """Récupère des recettes aléatoires via Marmiton API."""
+async def get_random_recipes(count: int = 5, target_servings: int = 4) -> list[dict]:
+    """Récupère des recettes aléatoires via TheMealDB (fallback Marmiton)."""
+    safe_count = max(1, min(count, 24))
+
     try:
-        recipes = await get_random_marmiton_recipes(count)
-        logger.info(f"Marmiton: {len(recipes)} recettes aléatoires récupérées")
-        return recipes
+        recipes: list[dict] = []
+        seen_titles: set[str] = set()
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            max_attempts = safe_count * 3
+            for _ in range(max_attempts):
+                if len(recipes) >= safe_count:
+                    break
+
+                resp = await client.get(MEALDB_RANDOM)
+                if resp.status_code != 200:
+                    continue
+
+                data = resp.json()
+                meals = data.get("meals") or []
+                if not meals:
+                    continue
+
+                normalized = _normalize_mealdb(meals[0], target_servings=target_servings)
+                title_key = (normalized.get("title") or "").strip().lower()
+                if not title_key or title_key in seen_titles:
+                    continue
+
+                seen_titles.add(title_key)
+                recipes.append(normalized)
+
+        if recipes:
+            logger.info(f"TheMealDB: {len(recipes)} recettes aléatoires récupérées")
+            return recipes
     except Exception as e:
-        logger.warning(f"Erreur recettes aléatoires Marmiton: {e}")
+        logger.warning(f"Erreur recettes aléatoires TheMealDB: {e}")
+
+    try:
+        fallback = await get_random_marmiton_recipes(safe_count)
+        logger.info(f"Fallback Marmiton: {len(fallback)} recettes aléatoires récupérées")
+        return fallback
+    except Exception as e:
+        logger.warning(f"Erreur fallback aléatoire Marmiton: {e}")
         return []
 
 
-def _normalize_mealdb(meal: dict) -> dict:
-    """Normalise une recette TheMealDB."""
+async def enrich_recipe_images_with_marmiton(recipes: list[dict], max_to_enrich: int = 8) -> list[dict]:
+    """
+    Enrichit les images de recettes via Marmiton quand elles sont absentes ou génériques.
+    """
+    enriched_count = 0
+    for recipe in recipes:
+        if enriched_count >= max_to_enrich:
+            break
+
+        current_image = recipe.get("image_url", "") or ""
+        is_generic = current_image.startswith("data:image/svg+xml") or not current_image
+        if not is_generic:
+            continue
+
+        title = (recipe.get("title") or "").strip()
+        if not title:
+            continue
+
+        try:
+            candidates = await search_marmiton_recipes(title, limit=1)
+            if not candidates:
+                continue
+
+            candidate_img = (candidates[0].get("image_url") or "").strip()
+            if candidate_img.startswith("http"):
+                recipe["image_url"] = candidate_img
+                enriched_count += 1
+        except Exception:
+            continue
+
+    return recipes
+
+
+def _normalize_mealdb(meal: dict, target_servings: int = 4) -> dict:
+    """Normalise une recette TheMealDB avec traduction et adaptation des quantités.
+    
+    Args:
+        meal: Données brutes de la recette TheMealDB
+        target_servings: Nombre de personnes cible (défaut 4)
+    """
+    # Servings originaux de TheMealDB (généralement 4)
+    original_servings = 4
+    ratio = target_servings / original_servings if original_servings > 0 else 1.0
+    
+    # Extraire et traduire les ingrédients avec adaptation des quantités
     ingredients = []
-    for i in range(1, 21):
-        ing = (meal.get(f"strIngredient{i}") or "").strip()
-        measure = (meal.get(f"strMeasure{i}") or "").strip()
-        if ing:
-            ingredients.append({"name": ing, "measure": measure})
+    all_ingredients_lower = []
+    
+    import re
 
+    prep_terms = sorted([
+        "finely chopped", "roughly chopped", "finely sliced", "thinly sliced",
+        "chopped", "minced", "diced", "sliced", "crushed", "grated", "ground",
+        "large", "medium", "small",
+        "finely", "roughly", "thinly"
+    ], key=len, reverse=True)
+
+    def _needs_de_prefix(measure_fr: str) -> bool:
+        import re
+        m = (measure_fr or "").lower()
+        if not m:
+            return False
+        # Détecter la présence d'une unité réelle (et éviter les faux positifs comme la lettre "l" dans "finely").
+        if re.search(r"c\.\s*à\s*(café|soupe)", m):
+            return True
+        unit_tokens = {
+            "tasse", "tasses", "quart", "quarts", "once", "onces", "livre", "livres",
+            "pincée", "pincées", "trait", "traits", "gousse", "gousses",
+            "g", "kg", "ml", "cl", "l", "mL", "cL", "L"
+        }
+        words = re.findall(r"[a-zA-ZÀ-ÿ\.]+", m)
+        return any(w in unit_tokens for w in words)
+
+    def _add_de_prefix(name_fr: str) -> str:
+        n = (name_fr or "").strip()
+        if not n:
+            return n
+        nl = n.lower()
+        if nl.startswith("de ") or nl.startswith("d'"):
+            return n
+        vowels = ("a", "e", "i", "o", "u", "y", "h", "à", "â", "é", "è", "ê", "ë", "î", "ï", "ô", "ù", "û", "ü")
+        return f"d'{n}" if nl.startswith(vowels) else f"de {n}"
+
+    def _agree_prep_with_measure(name_fr: str, measure_fr: str) -> str:
+        n = (name_fr or "").strip()
+        m = (measure_fr or "").lower()
+        if not n:
+            return n
+
+        words = n.split()
+        if not words:
+            return n
+
+        idx = 0
+        if words[0].lower() in {"de", "d'"} and len(words) > 1:
+            idx = 1
+
+        noun = words[idx].lower()
+        is_plural = noun.endswith("s")
+        is_feminine = noun.endswith("e") or noun.endswith("es")
+
+        # Fallback par la mesure (utile quand le nom commence par d'...)
+        if any(token in m for token in ["gousses", "tasses", "onces", "livres", "pincées"]):
+            is_feminine = True
+            is_plural = True
+        elif any(token in m for token in ["gousse", "tasse", "once", "livre", "pincée"]):
+            is_feminine = True
+            is_plural = False
+
+        lower_name = n.lower()
+        stems = {
+            "éminc": ("émincé", "émincée", "émincés", "émincées"),
+            "hach": ("haché", "hachée", "hachés", "hachées"),
+            "tranch": ("tranché", "tranchée", "tranchés", "tranchées"),
+            "râp": ("râpé", "râpée", "râpés", "râpées"),
+            "écras": ("écrasé", "écrasée", "écrasés", "écrasées"),
+        }
+
+        if is_feminine and is_plural:
+            form_idx = 3
+        elif is_feminine:
+            form_idx = 1
+        elif is_plural:
+            form_idx = 2
+        else:
+            form_idx = 0
+
+        import re
+        for stem, forms in stems.items():
+            pattern = rf" ({re.escape(stem)})(é|ée|és|ées)$"
+            if re.search(pattern, lower_name):
+                target = forms[form_idx]
+                return re.sub(pattern, f" {target}", n, flags=re.IGNORECASE)
+        return n
+
+    def _naturalize_french_ingredient(name_fr: str) -> str:
+        import re
+        n = (name_fr or "").strip()
+        if not n:
+            return n
+
+        n = re.sub(r"\s+", " ", n)
+        n = re.sub(r"\bd\'\s+", "d'", n)
+        n = re.sub(r"\bde\s+de\b", "de", n)
+        n = re.sub(r"\bd'\s+d'", "d'", n)
+        n = re.sub(r"\bde\s+d'", "d'", n)
+        return n.strip(" ,.-")
+
+    def _maybe_singularize_by_quantity(name_fr: str, measure_fr: str) -> str:
+        import re
+        from fractions import Fraction
+
+        n = (name_fr or "").strip()
+        m = (measure_fr or "").strip().lower()
+        if not n or not m:
+            return n
+
+        qty_match = re.match(r"^([\d.,/\s]+)", m)
+        if not qty_match:
+            return n
+
+        qty_raw = qty_match.group(1).strip()
+        try:
+            if ' ' in qty_raw and '/' in qty_raw:
+                main, frac = qty_raw.split(' ', 1)
+                qty = float(main) + float(Fraction(frac))
+            elif '/' in qty_raw:
+                qty = float(Fraction(qty_raw))
+            else:
+                qty = float(qty_raw.replace(',', '.'))
+        except Exception:
+            return n
+
+        if abs(qty - 1.0) > 0.0001:
+            return n
+
+        # Isoler le noyau nominal (avant éventuel qualificatif final)
+        words = n.split()
+        if not words:
+            return n
+
+        idx = 0
+        if words[0].lower() in {"de", "d'"} and len(words) > 1:
+            idx = 1
+
+        first = words[idx]
+        lower_first = first.lower()
+
+        irregular = {
+            "oeufs": "oeuf",
+            "œufs": "œuf",
+            "oignons": "oignon",
+            "carottes": "carotte",
+            "tomates": "tomate",
+            "pommes": "pomme",
+            "gousses": "gousse",
+        }
+        invariants = {"couscous", "maïs", "pois", "radis", "anis"}
+
+        if lower_first in invariants:
+            return n
+
+        if lower_first in irregular:
+            words[idx] = irregular[lower_first]
+            return " ".join(words)
+
+        if lower_first.endswith("s") and len(lower_first) > 3:
+            words[idx] = first[:-1]
+            return " ".join(words)
+
+        return n
+
+    for i in range(1, 21):
+        ing_en = (meal.get(f"strIngredient{i}") or "").strip()
+        measure_en = (meal.get(f"strMeasure{i}") or "").strip()
+        
+        if not ing_en:
+            continue
+        
+        ing_work = ing_en
+        measure_work = measure_en
+
+        # Certains flux TheMealDB mettent "chopped/minced/..." dans la mesure.
+        # On le déplace vers l'ingrédient pour obtenir "oignons hachés" au lieu de "2 haché oignons".
+        measure_lower = measure_work.lower()
+        for prep in prep_terms:
+            if re.search(rf"\b{re.escape(prep)}\b", measure_lower):
+                if prep not in ing_work.lower():
+                    ing_work = f"{prep} {ing_work}".strip()
+                measure_work = re.sub(rf"\b{re.escape(prep)}\b", "", measure_work, flags=re.IGNORECASE)
+                measure_work = re.sub(r"\s+", " ", measure_work).strip(" ,.-")
+                measure_lower = measure_work.lower()
+
+        # Traduire le nom de l'ingrédient
+        ing_fr = _translate_ingredient_name(ing_work)
+        
+        # Adapter et traduire la mesure
+        measure_fr = _adapt_and_translate_measure(measure_work, ratio)
+        
+        # Pour un rendu FR naturel: "2 c. à soupe de beurre", "4 quarts de bouillon"
+        if _needs_de_prefix(measure_fr):
+            ing_fr = _add_de_prefix(ing_fr)
+
+        ing_fr = _maybe_singularize_by_quantity(ing_fr, measure_fr)
+        ing_fr = _agree_prep_with_measure(ing_fr, measure_fr)
+        ing_fr = _naturalize_french_ingredient(ing_fr)
+
+        ingredients.append({"name": ing_fr, "measure": measure_fr})
+        all_ingredients_lower.append(ing_en.lower())
+    
+    # Extraire les tags
     tags = []
     if meal.get("strTags"):
         tags = [t.strip() for t in meal["strTags"].split(",")]
     if meal.get("strCategory"):
         tags.append(meal["strCategory"])
-
+    
+    # Détecter les régimes alimentaires
+    diet_tags = _detect_diet_tags(meal, all_ingredients_lower)
+    
     return {
         "title": meal.get("strMeal", ""),
         "ingredients_json": json.dumps(ingredients),
         "instructions": meal.get("strInstructions", ""),
         "prep_time": 30,
         "cook_time": 30,
-        "servings": 4,
+        "servings": target_servings,
         "source_url": meal.get("strSource", ""),
         "image_url": meal.get("strMealThumb", ""),
         "tags_json": json.dumps(tags),
-        "diet_tags_json": "[]",
+        "diet_tags_json": json.dumps(diet_tags),
     }
 
 
