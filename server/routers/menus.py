@@ -240,6 +240,8 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
         # S'assurer qu'on a assez de recettes (14 slots = 7 jours x 2 repas)
         if len(all_recipes) < 14:
             extra = await get_random_recipes(max(0, 20 - len(all_recipes)))
+            # IMPORTANT : filtrer les recettes supplémentaires par régime et allergène
+            extra = filter_by_diet(extra, diets, allergens, custom_exclusions)
             for r in extra:
                 title = r.get("title", "").lower().strip()
                 if title and title not in seen_titles:
