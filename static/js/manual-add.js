@@ -265,11 +265,18 @@
         const customFoods = getCustomFoods(category);
         const allFoods = [...baseFoods, ...customFoods];
 
+        // Taille des icônes depuis les réglages
+        const iconSize = localStorage.getItem('frigoscan-icon-size') || '2.2rem';
+
         grid.innerHTML = allFoods.map(f => {
-            const emoji = (customIcons[category] && customIcons[category][f.name]) || f.emoji;
+            const icon = (customIcons[category] && customIcons[category][f.name]) || f.emoji;
+            const isImage = icon && (icon.startsWith('http') || icon.startsWith('data:') || icon.startsWith('/'));
+            const iconHtml = isImage
+                ? `<img src="${icon}" alt="${f.name}" class="food-emoji-img" style="width:${iconSize};height:${iconSize};object-fit:contain;">`
+                : `<span class="food-emoji" style="font-size:${iconSize};">${icon}</span>`;
             return `
             <button class="food-btn" data-food='${JSON.stringify(f).replace(/'/g, "&apos;")}' data-custom="${customFoods.includes(f) ? '1' : '0'}">
-                <span class="food-emoji">${emoji}</span>
+                ${iconHtml}
                 <span>${f.name}</span>
             </button>`;
         }).join('');
@@ -327,13 +334,12 @@
                     <input type="text" id="new-food-name" class="form-input" placeholder="Ex: Avocat">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Emoji</label>
-                    <input type="text" id="new-food-emoji" class="form-input" placeholder="🥑" maxlength="4" style="width:80px;font-size:1.5rem;text-align:center;">
-                </div>
-                <div class="form-group">
                     <label class="form-label">Durée de conservation (jours)</label>
                     <input type="number" id="new-food-dlc" class="form-input" value="7" min="1">
                 </div>
+                <p style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">
+                    <i class="fas fa-info-circle"></i> L'icône peut être personnalisée dans Réglages > Personnalisation des icônes.
+                </p>
                 <div style="display:flex;gap:8px;margin-top:16px;">
                     <button class="btn btn-primary" id="btn-confirm-new-food" style="flex:1">Ajouter</button>
                     <button class="btn btn-secondary" id="btn-cancel-new-food" style="flex:1">Annuler</button>
@@ -347,10 +353,9 @@
 
         document.getElementById('btn-confirm-new-food').onclick = () => {
             const name = document.getElementById('new-food-name').value.trim();
-            const emoji = document.getElementById('new-food-emoji').value.trim() || '📦';
             const dlc_days = parseInt(document.getElementById('new-food-dlc').value) || 7;
             if (!name) { FrigoScan.toast('Entrez un nom.', 'warning'); return; }
-            saveCustomFood(category, { name, emoji, dlc_days });
+            saveCustomFood(category, { name, emoji: '📦', dlc_days });
             overlay.remove();
             showFoodGrid(category);
             FrigoScan.toast(`"${name}" ajouté à ${category} !`, 'success');

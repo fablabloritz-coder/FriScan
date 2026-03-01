@@ -135,6 +135,8 @@ def delete_recipe(recipe_id: int):
     """Supprime une recette."""
     db = get_db()
     try:
+        # Détacher la recette des menus avant suppression (FK constraint)
+        db.execute("UPDATE weekly_menu SET recipe_id = NULL WHERE recipe_id = ?", (recipe_id,))
         db.execute("DELETE FROM recipes WHERE id = ?", (recipe_id,))
         db.commit()
         return {"success": True, "message": "Recette supprimée."}

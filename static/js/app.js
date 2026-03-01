@@ -125,17 +125,18 @@ FrigoScan.navigate = function (viewName) {
     // Header
     const backBtn = document.getElementById('btn-back');
     const title = document.getElementById('page-title');
+    const logo = '<img src="/static/images/logo_frigoscan.png" alt="FrigoScan" class="header-logo">';
     const viewTitles = {
-        dashboard: '<i class="fas fa-snowflake"></i> FrigoScan',
-        scanner: '<i class="fas fa-barcode"></i> Scan rapide',
-        'manual-add': '<i class="fas fa-plus-circle"></i> Ajout manuel',
-        fridge: '<i class="fas fa-door-open"></i> Mon frigo',
-        recipes: '<i class="fas fa-utensils"></i> Recettes',
-        menu: '<i class="fas fa-calendar-week"></i> Menu semaine',
-        seasonal: '<i class="fas fa-leaf"></i> De saison',
-        shopping: '<i class="fas fa-shopping-cart"></i> Courses',
-        stats: '<i class="fas fa-chart-pie"></i> Statistiques',
-        settings: '<i class="fas fa-cog"></i> Réglages',
+        dashboard: `${logo} FrigoScan`,
+        scanner: `${logo} <span>Scan rapide</span>`,
+        'manual-add': `${logo} <span>Ajout manuel</span>`,
+        fridge: `${logo} <span>Mon frigo</span>`,
+        recipes: `${logo} <span>Recettes</span>`,
+        menu: `${logo} <span>Menu semaine</span>`,
+        seasonal: `${logo} <span>De saison</span>`,
+        shopping: `${logo} <span>Courses</span>`,
+        stats: `${logo} <span>Statistiques</span>`,
+        settings: `${logo} <span>Réglages</span>`,
     };
     title.innerHTML = viewTitles[viewName] || viewTitles.dashboard;
     if (viewName === 'dashboard') {

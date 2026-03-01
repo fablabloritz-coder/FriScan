@@ -93,6 +93,18 @@
             };
         });
 
+        // Slider taille des icônes
+        const iconSizeSlider = document.getElementById('settings-icon-size');
+        if (iconSizeSlider) {
+            const savedSize = localStorage.getItem('frigoscan-icon-size') || '2.2rem';
+            iconSizeSlider.value = parseFloat(savedSize) || 2.2;
+            document.getElementById('icon-size-label').textContent = `${iconSizeSlider.value}rem`;
+            iconSizeSlider.oninput = function () {
+                document.getElementById('icon-size-label').textContent = `${this.value}rem`;
+                localStorage.setItem('frigoscan-icon-size', `${this.value}rem`);
+            };
+        }
+
         // Charger les données depuis l'API
         const data = await FrigoScan.API.get('/api/settings/');
         if (!data.success) {
@@ -339,13 +351,50 @@
         const catIcons = customIcons[category] || {};
 
         grid.innerHTML = foods.map(f => {
-            const currentEmoji = catIcons[f.name] || f.emoji;
+            const currentIcon = catIcons[f.name] || f.emoji;
+            const isImage = currentIcon && (currentIcon.startsWith('http') || currentIcon.startsWith('data:') || currentIcon.startsWith('/'));
+            const previewHtml = isImage
+                ? `<img src="${currentIcon}" alt="${f.name}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;">`
+                : `<span style="font-size:1.5rem;">${currentIcon}</span>`;
             return `
                 <div class="icon-edit-item">
-                    <input type="text" class="icon-edit-input" data-cat="${category}" data-name="${f.name}" value="${currentEmoji}" maxlength="4">
+                    <div class="icon-edit-preview">${previewHtml}</div>
                     <span class="icon-edit-name">${f.name}</span>
+                    <div class="icon-edit-controls">
+                        <input type="text" class="icon-edit-input" data-cat="${category}" data-name="${f.name}" value="${currentIcon}" placeholder="Emoji ou URL">
+                        <label class="btn btn-sm btn-secondary icon-upload-btn" title="Charger une image">
+                            <i class="fas fa-image"></i>
+                            <input type="file" accept="image/*" class="icon-file-input" data-cat="${category}" data-name="${f.name}" style="display:none;">
+                        </label>
+                    </div>
                 </div>`;
         }).join('');
+
+        // Handlers pour upload d'image
+        grid.querySelectorAll('.icon-file-input').forEach(fileInput => {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (file.size > 200 * 1024) {
+                    FrigoScan.toast('Image trop volumineuse (max 200 Ko).', 'warning');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const dataUrl = reader.result;
+                    const cat = fileInput.dataset.cat;
+                    const name = fileInput.dataset.name;
+                    // Mettre à jour l'input texte
+                    const textInput = grid.querySelector(`.icon-edit-input[data-cat="${cat}"][data-name="${name}"]`);
+                    if (textInput) textInput.value = dataUrl;
+                    // Mettre à jour la preview
+                    const item = fileInput.closest('.icon-edit-item');
+                    const preview = item.querySelector('.icon-edit-preview');
+                    if (preview) preview.innerHTML = `<img src="${dataUrl}" alt="${name}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;">`;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
     };
 
     Settings.saveCustomIcons = function () {

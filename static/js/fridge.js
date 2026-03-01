@@ -52,7 +52,70 @@
         }
 
         empty.classList.add('hidden');
-        list.innerHTML = data.items.map(item => renderItem(item)).join('');
+
+        // Si tri par catégorie, regrouper avec des en-têtes
+        if (currentSort === 'category') {
+            const CATEGORY_EMOJIS = {
+                'fruits': '🍎', 'légumes': '🥕', 'viandes': '🥩', 'poissons': '🐟',
+                'produits laitiers': '🧀', 'boulangerie': '🍞', 'boissons': '🍷',
+                'féculents': '🌾', 'conserves': '🥫', 'surgelés': '❄️',
+                'condiments': '🌶️', 'snacks': '🍪', 'oeufs': '🥚',
+                'charcuterie': '🥓', 'autre': '📦'
+            };
+            const groups = {};
+            data.items.forEach(item => {
+                const cat = (item.category || 'autre').toLowerCase();
+                if (!groups[cat]) groups[cat] = [];
+                groups[cat].push(item);
+            });
+
+            let html = '';
+            for (const [cat, items] of Object.entries(groups)) {
+                const emoji = CATEGORY_EMOJIS[cat] || '📦';
+                const catName = cat.charAt(0).toUpperCase() + cat.slice(1);
+                html += `<div class="fridge-category-header">
+                    <span class="fridge-category-emoji">${emoji}</span>
+                    <span class="fridge-category-name">${catName}</span>
+                    <span class="fridge-category-count">${items.length} produit${items.length > 1 ? 's' : ''}</span>
+                </div>`;
+                html += items.map(item => renderItem(item)).join('');
+            }
+            list.innerHTML = html;
+        } else if (currentSort === 'dlc') {
+            // Tri DLC : séparer les groupes (périmé, bientôt, ok)
+            const expired = data.items.filter(i => i.dlc_status === 'expired');
+            const soon = data.items.filter(i => i.dlc_status === 'soon');
+            const ok = data.items.filter(i => i.dlc_status !== 'expired' && i.dlc_status !== 'soon');
+
+            let html = '';
+            if (expired.length) {
+                html += `<div class="fridge-category-header fridge-header-expired">
+                    <span class="fridge-category-emoji">⚠️</span>
+                    <span class="fridge-category-name">Périmés</span>
+                    <span class="fridge-category-count">${expired.length}</span>
+                </div>`;
+                html += expired.map(item => renderItem(item)).join('');
+            }
+            if (soon.length) {
+                html += `<div class="fridge-category-header fridge-header-soon">
+                    <span class="fridge-category-emoji">⏰</span>
+                    <span class="fridge-category-name">Bientôt périmés</span>
+                    <span class="fridge-category-count">${soon.length}</span>
+                </div>`;
+                html += soon.map(item => renderItem(item)).join('');
+            }
+            if (ok.length) {
+                html += `<div class="fridge-category-header fridge-header-ok">
+                    <span class="fridge-category-emoji">✅</span>
+                    <span class="fridge-category-name">OK</span>
+                    <span class="fridge-category-count">${ok.length}</span>
+                </div>`;
+                html += ok.map(item => renderItem(item)).join('');
+            }
+            list.innerHTML = html;
+        } else {
+            list.innerHTML = data.items.map(item => renderItem(item)).join('');
+        }
 
         // Attacher les événements
         list.querySelectorAll('[data-action]').forEach(btn => {

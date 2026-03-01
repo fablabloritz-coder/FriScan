@@ -29,7 +29,9 @@
     Menus.load = async function () {
         document.getElementById('btn-menu-prev').onclick = () => shiftWeek(-1);
         document.getElementById('btn-menu-next').onclick = () => shiftWeek(1);
-        document.getElementById('btn-generate-menu').onclick = generateMenu;
+        document.getElementById('btn-generate-menu-fridge').onclick = () => generateMenu('fridge');
+        document.getElementById('btn-generate-menu-scratch').onclick = () => generateMenu('scratch');
+        document.getElementById('btn-clear-menu').onclick = clearWeekMenu;
 
         const weekDate = new Date(currentWeekStart);
         const options = { day: 'numeric', month: 'long', year: 'numeric' };
@@ -74,12 +76,26 @@
         }).join('');
     }
 
-    async function generateMenu() {
-        FrigoScan.toast('Génération du menu en cours...', 'info');
+    async function generateMenu(mode) {
         const nbPersons = parseInt(localStorage.getItem('frigoscan-nb-persons') || '4');
-        const data = await FrigoScan.API.post(`/api/menus/generate?week_start=${currentWeekStart}&servings=${nbPersons}`);
+        const modeLabel = mode === 'fridge' ? 'selon le frigo' : 'de zéro';
+        FrigoScan.toast(`Génération du menu ${modeLabel} en cours...`, 'info');
+
+        const data = await FrigoScan.API.post(
+            `/api/menus/generate?week_start=${currentWeekStart}&servings=${nbPersons}&mode=${mode}`
+        );
         if (data.success) {
             FrigoScan.toast(data.message || 'Menu généré !', 'success');
+            Menus.load();
+        }
+    }
+
+    async function clearWeekMenu() {
+        const ok = await FrigoScan.confirm('Vider le menu', 'Supprimer tout le menu de cette semaine ?');
+        if (!ok) return;
+        const data = await FrigoScan.API.del(`/api/menus/week/${currentWeekStart}`);
+        if (data.success) {
+            FrigoScan.toast('Menu vidé.', 'success');
             Menus.load();
         }
     }

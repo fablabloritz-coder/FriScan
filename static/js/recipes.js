@@ -9,6 +9,43 @@
 
     let savedRecipeTitles = new Set(); // Titres des recettes déjà sauvegardées
 
+    // Parse les mesures d'ingrédients (ex: "200 g", "1/2 cup", "2 tbsp") en {qty, unit}
+    function parseMeasure(measure) {
+        if (!measure || !measure.trim()) return { qty: 1, unit: 'unité' };
+        const m = measure.trim();
+        const match = m.match(/^([\d.,/]+)\s*(.*)/);
+        if (match) {
+            let num = match[1];
+            let unitStr = (match[2] || '').trim();
+            // Gérer les fractions
+            if (num.includes('/')) {
+                const parts = num.split('/');
+                num = parseFloat(parts[0]) / parseFloat(parts[1]);
+            } else {
+                num = parseFloat(num.replace(',', '.'));
+            }
+            if (isNaN(num)) return { qty: 1, unit: m };
+            // Normaliser l'unité
+            const unitMap = {
+                'g': 'g', 'gr': 'g', 'gram': 'g', 'grams': 'g', 'gramme': 'g', 'grammes': 'g',
+                'kg': 'kg', 'kilogram': 'kg',
+                'ml': 'mL', 'milliliter': 'mL', 'millilitre': 'mL',
+                'cl': 'cL', 'centiliter': 'cL', 'centilitre': 'cL',
+                'l': 'L', 'liter': 'L', 'litre': 'L', 'litres': 'L',
+                'cup': 'cup', 'cups': 'cup',
+                'tbsp': 'c. à soupe', 'tablespoon': 'c. à soupe', 'tablespoons': 'c. à soupe',
+                'tsp': 'c. à café', 'teaspoon': 'c. à café', 'teaspoons': 'c. à café',
+                'oz': 'oz', 'ounce': 'oz', 'ounces': 'oz',
+                'lb': 'lb', 'pound': 'lb', 'pounds': 'lb',
+                'pièce': 'unité', 'pièces': 'unité', 'piece': 'unité', 'pieces': 'unité',
+            };
+            const lowerUnit = unitStr.toLowerCase();
+            const normalizedUnit = unitMap[lowerUnit] || unitStr || 'unité';
+            return { qty: Math.round(num * 10) / 10, unit: normalizedUnit };
+        }
+        return { qty: 1, unit: m || 'unité' };
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-recipe-search').addEventListener('click', searchRecipes);
         document.getElementById('recipe-search').addEventListener('keydown', e => {
@@ -203,6 +240,11 @@
         let tags = [];
         try { tags = JSON.parse(recipe.tags_json || '[]'); } catch (e) {}
 
+        // Nombre de personnes depuis les réglages
+        const nbPersons = parseInt(localStorage.getItem('frigoscan-nb-persons') || '4');
+        const recipeServings = recipe.servings || 4;
+        const portionRatio = nbPersons / recipeServings;
+
         // Charger le contenu du frigo pour vérifier la disponibilité
         let fridgeNames = new Set();
         try {
@@ -223,6 +265,29 @@
             ? `<img src="${recipe.image_url}" alt="${recipe.title}" style="width:100%;max-height:300px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:16px;">`
             : '';
 
+        // Ajuster les quantités d'ingrédients selon le ratio de portions
+        function adjustMeasure(measure) {
+            if (!measure || portionRatio === 1) return measure;
+            // Extraire le nombre du measure (ex: "200 g", "1/2 cup", "2")
+            const numMatch = measure.match(/^([\d.,/]+)\s*(.*)/);
+            if (numMatch) {
+                let num = numMatch[1];
+                const rest = numMatch[2];
+                // Gérer les fractions (1/2, 1/4...)
+                if (num.includes('/')) {
+                    const parts = num.split('/');
+                    num = parseFloat(parts[0]) / parseFloat(parts[1]);
+                } else {
+                    num = parseFloat(num.replace(',', '.'));
+                }
+                if (!isNaN(num)) {
+                    const adjusted = Math.round(num * portionRatio * 10) / 10;
+                    return `${adjusted} ${rest}`.trim();
+                }
+            }
+            return measure;
+        }
+
         // Construire les pills d'ingrédients
         const ingredientPills = ingredients.map(ing => {
             const ingName = (ing.name || '').toLowerCase().trim();
@@ -235,12 +300,19 @@
             }
             const cls = isAvailable ? 'ingredient-pill available' : 'ingredient-pill missing';
             const icon = isAvailable ? '<i class="fas fa-check"></i>' : '<i class="fas fa-cart-plus"></i>';
-            const measureText = ing.measure ? `${ing.measure} ` : '';
+            const adjustedMeasure = adjustMeasure(ing.measure);
+            const measureText = adjustedMeasure ? `${adjustedMeasure} ` : '';
             const addBtn = !isAvailable
-                ? ` <button class="btn-add-ingredient" data-name="${(ing.name || '').replace(/"/g, '&quot;')}" title="Ajouter à la liste de courses">+</button>`
+                ? ` <button class="btn-add-ingredient" data-name="${(ing.name || '').replace(/"/g, '&quot;')}" data-measure="${(adjustedMeasure || '').replace(/"/g, '&quot;')}" title="Ajouter à la liste de courses">+</button>`
                 : '';
             return `<span class="${cls}">${icon} ${measureText}${ing.name}${addBtn}</span>`;
         }).join('');
+
+        const portionInfo = portionRatio !== 1
+            ? `<div style="padding:8px 12px;background:var(--bg-hover);border-radius:var(--radius-sm);margin-bottom:12px;font-size:0.85rem;">
+                   <i class="fas fa-info-circle"></i> Quantités ajustées pour <strong>${nbPersons} personnes</strong> (recette originale : ${recipeServings} pers.)
+               </div>`
+            : '';
 
         content.innerHTML = `
             ${imgHtml}
@@ -249,9 +321,10 @@
                 ${(recipe.prep_time || recipe.cook_time)
                     ? `<span class="badge"><i class="fas fa-clock"></i> Prépa: ${recipe.prep_time || 0}min — Cuisson: ${recipe.cook_time || 0}min</span>`
                     : ''}
-                <span class="badge"><i class="fas fa-users"></i> ${recipe.servings || 4} personnes</span>
+                <span class="badge"><i class="fas fa-users"></i> ${nbPersons} personnes</span>
                 ${recipe.match_score !== undefined ? `<span class="badge"><i class="fas fa-bullseye"></i> Compatibilité: ${recipe.match_score}%</span>` : ''}
             </div>
+            ${portionInfo}
             ${tags.length ? `<div style="margin-bottom:12px;">${tags.map(t => `<span class="badge" style="margin:2px;">${t}</span>`).join('')}</div>` : ''}
 
             <h3 style="margin-bottom:8px;">Ingrédients</h3>
@@ -288,9 +361,11 @@
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const name = btn.dataset.name;
-                const res = await FrigoScan.API.post('/api/shopping/', { product_name: name, quantity: 1, unit: 'unité' });
+                const measure = btn.dataset.measure || '';
+                const { qty, unit } = parseMeasure(measure);
+                const res = await FrigoScan.API.post('/api/shopping/', { product_name: name, quantity: qty, unit: unit });
                 if (res.success) {
-                    FrigoScan.toast(`"${name}" ajouté à la liste de courses`, 'success');
+                    FrigoScan.toast(`"${name}" ajouté à la liste de courses (${qty} ${unit})`, 'success');
                     btn.parentElement.classList.remove('missing');
                     btn.parentElement.classList.add('available');
                     btn.remove();
@@ -298,14 +373,24 @@
             });
         });
 
-        // Handler pour ajout de tous les manquants
+        // Handler pour ajout de tous les manquants (avec mesures)
         const addAllBtn = content.querySelector('.btn-add-all-missing');
-        if (addAllBtn && recipe.missing_ingredients) {
+        if (addAllBtn) {
             addAllBtn.addEventListener('click', async () => {
                 let added = 0;
-                for (const name of recipe.missing_ingredients) {
-                    const res = await FrigoScan.API.post('/api/shopping/', { product_name: name, quantity: 1, unit: 'unité' });
-                    if (res.success) added++;
+                // Récupérer les pills manquants avec leurs mesures
+                const missingPills = content.querySelectorAll('.btn-add-ingredient');
+                for (const pill of missingPills) {
+                    const name = pill.dataset.name;
+                    const measure = pill.dataset.measure || '';
+                    const { qty, unit } = parseMeasure(measure);
+                    const res = await FrigoScan.API.post('/api/shopping/', { product_name: name, quantity: qty, unit: unit });
+                    if (res.success) {
+                        added++;
+                        pill.parentElement.classList.remove('missing');
+                        pill.parentElement.classList.add('available');
+                        pill.remove();
+                    }
                 }
                 FrigoScan.toast(`${added} ingrédient(s) ajouté(s) à la liste de courses`, 'success');
                 addAllBtn.disabled = true;

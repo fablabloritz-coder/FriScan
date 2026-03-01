@@ -65,31 +65,17 @@ def add_menu_entry(entry: MenuEntry):
 
 
 @router.post("/generate")
-async def generate_menu(week_start: str = None, servings: int = 4):
+async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "fridge"):
     """
-    Génère automatiquement un menu de la semaine
-    basé sur le contenu du frigo et les recettes disponibles.
+    Génère automatiquement un menu de la semaine.
+    mode='fridge' : priorise les recettes correspondant au frigo.
+    mode='scratch' : ignore le frigo, utilise juste les réglages de régime.
     """
     if week_start is None:
         week_start = _get_week_start()
 
     db = get_db()
     try:
-        # Récupérer contenu du frigo
-        fridge_items = rows_to_list(
-            db.execute("SELECT * FROM fridge_items WHERE status='active'").fetchall()
-        )
-
-        # Récupérer recettes
-        recipes = rows_to_list(
-            db.execute("SELECT * FROM recipes").fetchall()
-        )
-
-        # Import local recipes
-        from server.services.recipe_service import load_local_recipes, compute_match_score, filter_by_diet
-        local_recipes = load_local_recipes()
-        all_recipes = recipes + local_recipes
-
         # Récupérer réglages
         diets_row = db.execute("SELECT value FROM settings WHERE key='diets'").fetchone()
         allergens_row = db.execute("SELECT value FROM settings WHERE key='allergens'").fetchone()
@@ -100,20 +86,83 @@ async def generate_menu(week_start: str = None, servings: int = 4):
         custom_excl_row = db.execute("SELECT value FROM settings WHERE key='custom_exclusions'").fetchone()
         custom_exclusions = json.loads(custom_excl_row["value"]) if custom_excl_row else []
 
-        all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
+        from server.services.recipe_service import (
+            load_local_recipes, compute_match_score, filter_by_diet,
+            get_random_recipes, search_recipes_online
+        )
 
-        # Scorer les recettes
-        for recipe in all_recipes:
-            score, missing = compute_match_score(recipe.get("ingredients_json", "[]"), fridge_items)
-            recipe["match_score"] = score
+        # Récupérer recettes locales (base + fichier)
+        db_recipes = rows_to_list(db.execute("SELECT * FROM recipes").fetchall())
+        local_recipes = load_local_recipes()
+        all_recipes = db_recipes + local_recipes
 
-        all_recipes.sort(key=lambda r: r.get("match_score", 0), reverse=True)
+        if mode == "fridge":
+            # Récupérer contenu du frigo
+            fridge_items = rows_to_list(
+                db.execute("SELECT * FROM fridge_items WHERE status='active'").fetchall()
+            )
 
-        # Si pas assez de recettes, chercher en ligne
+            # Si le frigo est trop vide, compléter avec des recettes en ligne
+            if fridge_items:
+                fridge_names = [item["name"] for item in fridge_items[:5]]
+                for name in fridge_names[:3]:
+                    online = await search_recipes_online(name)
+                    all_recipes.extend(online)
+
+            # Filtrer par régime
+            all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
+
+            # Scorer par rapport au frigo
+            for recipe in all_recipes:
+                score, missing = compute_match_score(recipe.get("ingredients_json", "[]"), fridge_items)
+                recipe["match_score"] = score
+
+            all_recipes.sort(key=lambda r: r.get("match_score", 0), reverse=True)
+        else:
+            # Mode scratch : pas de score frigo, juste filtrer par régime
+            # Chercher beaucoup de recettes en ligne pour de la variété
+            random_recipes = await get_random_recipes(20)
+            all_recipes.extend(random_recipes)
+
+            # Chercher aussi des termes variés pour plus de diversité
+            variety_terms = ["poulet", "salade", "pâtes", "soupe", "poisson", "riz", "légumes"]
+            import random as rnd
+            rnd.shuffle(variety_terms)
+            for term in variety_terms[:4]:
+                online = await search_recipes_online(term)
+                all_recipes.extend(online)
+
+            all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
+
+        # Dédupliquer par titre
+        seen_titles = set()
+        unique_recipes = []
+        for r in all_recipes:
+            title = r.get("title", "").lower().strip()
+            if title and title not in seen_titles:
+                seen_titles.add(title)
+                unique_recipes.append(r)
+        all_recipes = unique_recipes
+
+        # S'assurer qu'on a assez de recettes (14 slots = 7 jours x 2 repas)
         if len(all_recipes) < 14:
-            from server.services.recipe_service import get_random_recipes
-            online = await get_random_recipes(max(0, 14 - len(all_recipes)))
-            all_recipes.extend(online)
+            extra = await get_random_recipes(max(0, 20 - len(all_recipes)))
+            for r in extra:
+                title = r.get("title", "").lower().strip()
+                if title and title not in seen_titles:
+                    seen_titles.add(title)
+                    all_recipes.append(r)
+
+        # Mélanger un peu pour éviter toujours le même ordre
+        import random as rnd
+        if mode == "fridge" and len(all_recipes) > 14:
+            # Garder les meilleurs mais mélanger les ex-aequo
+            top = all_recipes[:6]
+            rest = all_recipes[6:]
+            rnd.shuffle(rest)
+            all_recipes = top + rest
+        elif mode == "scratch":
+            rnd.shuffle(all_recipes)
 
         # Effacer le menu existant pour cette semaine
         db.execute("DELETE FROM weekly_menu WHERE week_start = ?", (week_start,))
@@ -144,7 +193,9 @@ async def generate_menu(week_start: str = None, servings: int = 4):
                     menu.append({"day_of_week": day, "meal_type": meal, "recipe_title": "Repas libre"})
 
         db.commit()
-        return {"success": True, "week_start": week_start, "menu": menu, "message": "Menu généré avec succès."}
+        mode_label = "selon le frigo" if mode == "fridge" else "de zéro"
+        return {"success": True, "week_start": week_start, "menu": menu,
+                "message": f"Menu généré {mode_label} — {len(all_recipes)} recettes disponibles."}
     finally:
         db.close()
 
