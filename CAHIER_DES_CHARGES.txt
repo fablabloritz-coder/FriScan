@@ -33,7 +33,7 @@ FrigoScan est une application tactile optimisée pour Surface Pro (et tablettes/
 	- Recettes selon le contenu du frigo et les régimes cumulés.
 	- Sources : internet (Open Food Facts, Marmiton), base locale de secours.
 	- Filtrage par régime alimentaire (sélection cumulée), score de correspondance, ingrédients manquants, instructions, temps de préparation.
-	- Suggestions d’alternatives en cas de produit manquant ou allergène détecté.
+	- Suggestions d’alternatives en cas de produit manquant ou allergène détecté
 	- Recettes adaptées pour consommer en priorité les produits à DLC courte ou en stock important.
 	- Quantités ajustées selon le nombre de personnes.
 

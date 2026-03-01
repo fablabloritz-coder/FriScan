@@ -251,7 +251,13 @@ INGREDIENT_FR = {
     "basil leaves": "feuilles de basilic", "cilantro leaves": "feuilles de coriandre", "mint leaves": "feuilles de menthe",
     "zest of": "zeste de", "juice of": "jus de", "for brushing": "pour badigeonner",
     "egg plants": "aubergines", "ground meat": "viande moulue", "unwaxed lemon": "citron non ciré",
-    "unwaxed lime": "citron vert non ciré", "handful": "poignée",
+    "unwaxed lime": "citron vert non ciré", "handful": "poignée", 
+    "clove": "clou de girofle", "cloves": "clous de girofle", "whole clove": "clou de girofle entier",
+    "stalk": "tige", "stalks": "tiges",
+    "whole": "entier", "dried": "séché", "fresh": "frais", "leaves": "feuilles",
+    "whole peppercorns": "grains de poivre entiers", "dried chili": "piment séché",
+    "dried fenugreek": "fenugrec séché", "tarragon leaves": "feuilles d'estragon",
+    "handfull": "poignée", "-ounce": "once",
 }
 
 def _translate_ingredient_name(name_en: str) -> str:
@@ -428,6 +434,10 @@ def _translate_measure(measure_en: str) -> str:
         'leaf': 'feuille', 'leaves': 'feuilles', 'leaf.': 'feuille', 'leaves.': 'feuilles',
         'sprinkling': 'pincée', 'sprinkle': 'pincée', 'sprinkles': 'pincée',
         'topping': 'garniture', 'toppings': 'garniture',
+        'whole': 'entier', 'dried': 'séché', 'fresh': 'frais',
+        'handful': 'poignée', 'handfuls': 'poignée',
+        'milliliters)': 'mL)', 'milliliter)': 'mL)',
+        'handfull': 'poignée', '-ounce': 'once',
     }
     pluralizable_units = {'tasse', 'once', 'livre', 'pincée', 'trait', 'gousse', 'quart'}
     phrase_map = {
