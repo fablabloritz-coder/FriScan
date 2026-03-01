@@ -271,6 +271,50 @@ async def suggest_by_category(category: str, max_results: int = 12):
         db.close()
 
 
+@router.get("/suggest/categories")
+async def suggest_by_multiple_categories(categories: list = None, max_results: int = 12):
+    """
+    Suggestions de recettes par multiple catégories (intersection).
+    """
+    if not categories:
+        return {"success": False, "message": "Aucune categorie specifiee"}
+    
+    db = get_db()
+    try:
+        diets_row = db.execute("SELECT value FROM settings WHERE key='diets'").fetchone()
+        allergens_row = db.execute("SELECT value FROM settings WHERE key='allergens'").fetchone()
+        diets = json.loads(diets_row["value"]) if diets_row else []
+        allergens = json.loads(allergens_row["value"]) if allergens_row else []
+
+        custom_excl_row = db.execute("SELECT value FROM settings WHERE key='custom_exclusions'").fetchone()
+        custom_exclusions = json.loads(custom_excl_row["value"]) if custom_excl_row else []
+
+        banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
+        banned_titles = set(r["title"] for r in banned_rows)
+
+        # Recuperer recettes pour chaque categorie
+        all_recipes = []
+        for category in categories:
+            recipes = await get_recipes_by_category(category, max_results=max_results + 10)
+            all_recipes.extend(recipes)
+
+        # Filtrer par régime
+        all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
+
+        # Dédupliquer et filtrer bannies
+        seen = set()
+        unique = []
+        for r in all_recipes:
+            title = r.get("title", "").lower().strip()
+            if title and title not in seen and title not in banned_titles:
+                seen.add(title)
+                unique.append(r)
+
+        return {"success": True, "recipes": unique[:max_results], "categories": categories}
+    finally:
+        db.close()
+
+
 # ---- Recettes bannies ----
 
 @router.get("/banned")

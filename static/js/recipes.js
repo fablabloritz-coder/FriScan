@@ -77,6 +77,8 @@
     });
 
     // ---- Filtre par catégorie ----
+    let selectedFilters = new Set();
+    
     const CATEGORY_ICONS = {
         'Beef': '🥩', 'Chicken': '🍗', 'Dessert': '🍰', 'Lamb': '🐑',
         'Pasta': '🍝', 'Pork': '🥓', 'Seafood': '🦐', 'Side': '🥗',
@@ -98,32 +100,52 @@
                 </button>`
             ).join('');
 
+            // Ajouter bouton "Appliquer les filtres"
+            const applyBtn = document.createElement('button');
+            applyBtn.className = 'btn btn-primary btn-apply-filters hidden';
+            applyBtn.innerHTML = '<i class="fas fa-search"></i> Appliquer les filtres';
+            applyBtn.id = 'btn-apply-filters';
+            container.parentElement.insertBefore(applyBtn, container.nextSibling);
+
             container.querySelectorAll('.btn-category-filter').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    // Toggle active state
-                    const wasActive = btn.classList.contains('active');
-                    container.querySelectorAll('.btn-category-filter').forEach(b => b.classList.remove('active'));
-                    if (!wasActive) {
-                        btn.classList.add('active');
-                        suggestByCategory(btn.dataset.cat);
+                    btn.classList.toggle('active');
+                    if (btn.classList.contains('active')) {
+                        selectedFilters.add(btn.dataset.cat);
                     } else {
-                        // Deselect — clear results
-                        document.getElementById('recipes-list').innerHTML = '';
-                        document.getElementById('recipes-empty').classList.remove('hidden');
+                        selectedFilters.delete(btn.dataset.cat);
+                    }
+                    const applyBtn = document.getElementById('btn-apply-filters');
+                    if (applyBtn) {
+                        applyBtn.classList.toggle('hidden', selectedFilters.size === 0);
                     }
                 });
             });
-        } catch (e) { console.warn('Impossible de charger les catégories', e); }
+            applyBtn.addEventListener('click', () => suggestByMultipleCategories(Array.from(selectedFilters)));
+        } catch (e) { console.warn('Impossible de charger les categories', e); }
     }
 
     let isSuggestingCategory = false;
-    async function suggestByCategory(category) {
-        if (isSuggestingCategory) return;
+    
+    async function suggestByMultipleCategories(categories) {
+        if (isSuggestingCategory || categories.length === 0) return;
         isSuggestingCategory = true;
-        FrigoScan.toast(`Chargement des recettes « ${category} »...`, 'info');
+        const applyBtn = document.getElementById('btn-apply-filters');
+        if (applyBtn) applyBtn.disabled = true;
+        
+        const filtresLabel = categories.map(c => {
+            const cat = (document.querySelector(`[data-cat="${c}"]`) || {}).textContent;
+            return cat ? cat.trim() : c;
+        }).join(' + ');
+        
+        FrigoScan.toast(`Recherche avec filtres: ${filtresLabel}...`, 'info');
         try {
             await refreshSavedTitles();
-            const data = await FrigoScan.API.get(`/api/recipes/suggest/category/${encodeURIComponent(category)}?max_results=12`);
+            const params = new URLSearchParams();
+            categories.forEach(cat => params.append('categories', cat));
+            params.append('max_results', '12');
+            
+            const data = await FrigoScan.API.get(`/api/recipes/suggest/categories?${params.toString()}`);
             if (data.success) {
                 let recipes = data.recipes || [];
                 recipes = recipes.filter(r => {
@@ -131,13 +153,21 @@
                     return !savedRecipeTitles.has(t) && !bannedTitles.has(t);
                 });
                 if (recipes.length === 0) {
-                    FrigoScan.toast('Aucune recette trouvée pour cette catégorie.', 'warning');
+                    const msg = categories.length > 1 
+                        ? `Aucune recette trouvee pour ${filtresLabel}. Les filtres sont peut-etre trop precis ou incompatibles.`
+                        : `Aucune recette trouvee pour ${filtresLabel}.`;
+                    FrigoScan.toast(msg, 'warning');
                 }
                 renderRecipes(recipes);
             }
         } finally {
             isSuggestingCategory = false;
+            if (applyBtn) applyBtn.disabled = false;
         }
+    }
+
+    async function suggestByCategory(category) {
+        return suggestByMultipleCategories([category]);
     }
 
     // ---- Recettes sauvegardées ----
@@ -304,26 +334,48 @@
         if (isSuggesting) return;
         isSuggesting = true;
         const btn = document.getElementById('btn-recipe-suggest');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche...'; }
+        const progressDiv = document.getElementById('suggestion-progress');
+        
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche 0%'; }
+        if (progressDiv) progressDiv.classList.remove('hidden');
+        
         try {
-            // Charger les titres sauvegardés pour filtrer les doublons
             await refreshSavedTitles();
+            
+            let currentProgress = 0;
+            const updateProgress = (percent) => {
+                currentProgress = Math.min(percent, 99);
+                if (btn) btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Recherche ${currentProgress}%`;
+                if (progressDiv) {
+                    const bar = progressDiv.querySelector('.progress-bar');
+                    if (bar) bar.style.width = currentProgress + '%';
+                }
+            };
+            
+            updateProgress(15);
             const data = await FrigoScan.API.get('/api/recipes/suggest?max_results=12&min_score=10');
+            updateProgress(75);
+            
             if (data.success) {
-                // Filtrer les recettes déjà sauvegardées + bannies
                 let recipes = data.recipes || [];
                 recipes = recipes.filter(r => {
                     const t = r.title.toLowerCase().trim();
                     return !savedRecipeTitles.has(t) && !bannedTitles.has(t);
                 });
+                updateProgress(95);
+                
                 if (recipes.length === 0) {
-                    FrigoScan.toast(data.message || 'Aucune nouvelle suggestion trouvée.', 'warning');
+                    FrigoScan.toast(data.message || 'Aucune nouvelle suggestion trouvee.', 'warning');
                 }
                 renderRecipes(recipes);
+                updateProgress(100);
             }
         } finally {
             isSuggesting = false;
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-door-open"></i> Suggestions selon mon frigo'; }
+            setTimeout(() => {
+                if (progressDiv) progressDiv.classList.add('hidden');
+            }, 1000);
         }
     }
 

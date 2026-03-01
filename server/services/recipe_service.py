@@ -22,10 +22,75 @@ TIMEOUT = 15.0
 
 # API de traduction gratuite MyMemory
 TRANSLATION_API = "https://api.mymemory.translated.net/get"
-TRANSLATION_TIMEOUT = 5.0
+TRANSLATION_TIMEOUT = 3.0
 
-# Cache de traduction (en mémoire) pour éviter les requêtes répétées
-_translation_cache = {}
+# Dictionnaire de traductions de titres courants EN -> FR
+RECIPE_TITLES_FR = {
+    "chicken curry": "curry de poulet",
+    "chicken fried rice": "riz frit au poulet",
+    "beef bourguignon": "boeuf bourguignon",
+    "beef stew": "ragoût de boeuf",
+    "fish and chips": "poisson frit et frites",
+    "fish tacos": "tacos au poisson",
+    "pork chops": "côtelettes de porc",
+    "lamb roast": "rôti d'agneau",
+    "spaghetti carbonara": "spaghetti carbonara",
+    "lasagne": "lasagne",
+    "pizza margherita": "pizza margherita",
+    "grilled vegetables": "legumes grilles",
+    "vegetable stir fry": "saute de legumes",
+    "caesar salad": "salade cesar",
+    "greek salad": "salade grecque",
+    "french onion soup": "soupe à l'oignon",
+    "mushroom soup": "soupe aux champignons",
+    "tomato soup": "soupe à la tomate",
+    "chocolate cake": "gateau au chocolat",
+    "carrot cake": "gateau aux carottes",
+    "apple pie": "tarte aux pommes",
+    "cheesecake": "gateau fromage",
+    "tiramisu": "tiramisu",
+    "brownies": "brownies",
+    "ice cream": "glace",
+    "pancakes": "crepes",
+    "waffles": "gaufres",
+    "omelette": "omelette",
+    "scrambled eggs": "oeufs brouilles",
+    "french toast": "pain perdu",
+    "breakfast": "petit-dejeuner",
+    "salmon": "saumon",
+    "tuna": "thon",
+    "shrimp": "crevettes",
+    "mussels": "moules",
+    "paella": "paella",
+    "risotto": "risotto",
+    "couscous": "couscous",
+    "tajine": "tajine",
+    "ramen": "ramen",
+    "pad thai": "pad thai",
+    "thai green curry": "curry vert thai",
+    "tom yum": "tom yum",
+    "butter chicken": "poulet au beurre",
+    "tandoori chicken": "poulet tandoori",
+    "samosa": "samoussa",
+    "naan": "naan",
+    "biryani": "biryani",
+    "falafel": "falafel",
+    "hummus": "houmous",
+    "shawarma": "shawarma",
+    "tempura": "tempura",
+    "sushi": "sushi",
+    "dim sum": "dim sum",
+    "peking duck": "canard de pekin",
+    "dumplings": "raviolis",
+    "goulash": "goulasch",
+    "pierogi": "pierogis",
+    "borscht": "bortsch",
+    "croissant": "croissant",
+    "baguette": "baguette",
+    "macaron": "macaron",
+    "eclair": "eclair",
+    "mille-feuille": "mille-feuille",
+}
 
 LOCAL_RECIPES_PATH = Path(__file__).parent.parent / "data" / "local_recipes.json"
 
@@ -39,10 +104,25 @@ async def _translate_text_api(text: str, source_lang: str = "en", target_lang: s
     if not text or not text.strip():
         return text
     
-    # Vérifier le cache
-    cache_key = f"{source_lang}:{target_lang}:{text.strip()}"
-    if cache_key in _translation_cache:
-        return _translation_cache[cache_key]
+    text_lower = text.lower().strip()
+    
+    # Vérifier le dictionnaire de fallback d'abord
+    if text_lower in RECIPE_TITLES_FR:
+        return RECIPE_TITLES_FR[text_lower]
+    
+    # Cherche un mot-clé dans le titre
+    for en_key, fr_value in RECIPE_TITLES_FR.items():
+        if en_key in text_lower:
+            # Remplacer le mot-clé par sa traduction
+            translated = text
+            for word_en in en_key.split():
+                for key, val in RECIPE_TITLES_FR.items():
+                    if word_en in key:
+                        # Trouver les mots en français correspondants
+                        translated = translated.replace(word_en, val.split()[0] if val.split() else val)
+                        break
+            if translated != text:
+                return translated
     
     try:
         async with httpx.AsyncClient(timeout=TRANSLATION_TIMEOUT) as client:
@@ -55,9 +135,7 @@ async def _translate_text_api(text: str, source_lang: str = "en", target_lang: s
                 data = resp.json()
                 if data.get("responseStatus") == 200:
                     translated = data.get("responseData", {}).get("translatedText", "")
-                    if translated and translated.strip():
-                        # Mettre en cache
-                        _translation_cache[cache_key] = translated
+                    if translated and translated.strip() and translated != text:
                         return translated
     except Exception as e:
         logger.warning(f"Erreur traduction API '{text}': {e}")
