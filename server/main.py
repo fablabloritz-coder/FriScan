@@ -20,6 +20,15 @@ from server.database import init_db
 from server.routers import scan, fridge, recipes, menus, shopping, stats, settings, export_import, seasonal
 
 # ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000"
+).split(",")
+
+# ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 logging.basicConfig(
@@ -39,10 +48,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type"],
 )
 
 # ---------------------------------------------------------------------------
@@ -87,11 +96,18 @@ def health():
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Erreur non gérée: {exc}", exc_info=True)
+    
+    # En production, ne pas exposer la stacktrace
+    if DEBUG:
+        error_msg = str(exc)
+    else:
+        error_msg = "Erreur serveur"
+    
     return JSONResponse(
         status_code=500,
         content={
             "success": False,
-            "error": str(exc),
+            "error": error_msg,
             "message": "Une erreur inattendue s'est produite. Veuillez réessayer.",
             "conseil": "Si le problème persiste, vous pouvez restaurer la base depuis les réglages.",
         }

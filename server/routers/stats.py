@@ -2,7 +2,7 @@
 FrigoScan — Router Statistiques et Historique.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from server.database import get_db, rows_to_list
 from datetime import datetime, date, timedelta
 
@@ -10,22 +10,43 @@ router = APIRouter(prefix="/api/stats", tags=["Statistiques"])
 
 
 @router.get("/consumption")
-def consumption_history(days: int = 30, user_name: str = None):
-    """Historique des consommations."""
+def consumption_history(
+    days: int = 30,
+    user_name: str = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500),
+):
+    """Historique des consommations avec pagination."""
     db = get_db()
     try:
         since = (date.today() - timedelta(days=days)).isoformat()
+        
+        # Requêtes avec paramètres
+        base_query = "FROM consumption_history WHERE consumed_at >= ?"
+        params = [since]
+        
         if user_name:
-            rows = db.execute(
-                "SELECT * FROM consumption_history WHERE consumed_at >= ? AND user_name = ? ORDER BY consumed_at DESC",
-                (since, user_name)
-            ).fetchall()
-        else:
-            rows = db.execute(
-                "SELECT * FROM consumption_history WHERE consumed_at >= ? ORDER BY consumed_at DESC",
-                (since,)
-            ).fetchall()
-        return {"success": True, "history": rows_to_list(rows)}
+            base_query += " AND user_name = ?"
+            params.append(user_name)
+        
+        # Total
+        count_query = f"SELECT COUNT(*) as c {base_query}"
+        total = db.execute(count_query, params).fetchone()["c"]
+        
+        # Pagination
+        offset = (page - 1) * limit
+        rows_query = f"SELECT * {base_query} ORDER BY consumed_at DESC LIMIT ? OFFSET ?"
+        rows = db.execute(rows_query, params + [limit, offset]).fetchall()
+        
+        pages = (total + limit - 1) // limit
+        return {
+            "success": True,
+            "data": rows_to_list(rows),
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": pages,
+        }
     finally:
         db.close()
 

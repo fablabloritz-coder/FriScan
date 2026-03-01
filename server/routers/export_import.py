@@ -117,61 +117,129 @@ def export_all_json():
 
 @router.post("/import/json")
 async def import_all_json(file: UploadFile = File(...)):
-    """Importe des données depuis un fichier JSON (fusion)."""
+    """Importe des données depuis un fichier JSON (fusion) avec transactions atomiques."""
+    
+    # 1. Validation taille fichier
+    MAX_SIZE = 10 * 1024 * 1024  # 10MB
     try:
         content = await file.read()
-        data = json.loads(content.decode("utf-8"))
     except Exception as e:
-        raise HTTPException(400, f"Fichier JSON invalide : {str(e)}")
+        raise HTTPException(400, f"Erreur lecture fichier: {str(e)}")
+    
+    if len(content) > MAX_SIZE:
+        raise HTTPException(
+            400,
+            f"Fichier trop volumineux ({len(content)} > {MAX_SIZE} bytes)"
+        )
+    
+    # 2. Parse et validation JSON
+    try:
+        data = json.loads(content.decode("utf-8"))
+    except json.JSONDecodeError as e:
+        raise HTTPException(400, f"JSON invalide: {str(e)}")
+    except Exception as e:
+        raise HTTPException(400, f"Erreur décodage: {str(e)}")
+    
+    # 3. Valider schéma (clés recommandées)
+    valid_keys = {'products', 'fridge', 'recipes', 'consumption_history', 'weekly_menu', 'shopping_list', 'settings', 'stock_minimums', 'export_date'}
+    if not isinstance(data, dict):
+        raise HTTPException(400, "Le JSON doit être un objet (dictionnaire)")
+    
+    unknown_keys = set(data.keys()) - valid_keys
+    if unknown_keys:
+        raise HTTPException(400, f"Clés inconnues: {', '.join(unknown_keys)}")
 
+    # 4. Import ATOMIQUE (tout ou rien) avec transaction
     db = get_db()
     try:
+        # Démarrer transaction IMMÉDIATEMENT
+        db.execute("BEGIN IMMEDIATE")
         imported = {}
 
         # Import produits
         if "products" in data:
-            for p in data["products"]:
-                db.execute(
-                    "INSERT OR IGNORE INTO products (barcode, name, brand, image_url, category, nutrition_json) VALUES (?, ?, ?, ?, ?, ?)",
-                    (p.get("barcode"), p.get("name", ""), p.get("brand"), p.get("image_url"), p.get("category"), p.get("nutrition_json", "{}"))
-                )
+            if not isinstance(data["products"], list):
+                raise ValueError("'products' doit être une liste")
+            for idx, p in enumerate(data["products"]):
+                try:
+                    db.execute(
+                        "INSERT OR IGNORE INTO products (barcode, name, brand, image_url, category, nutrition_json) VALUES (?, ?, ?, ?, ?, ?)",
+                        (p.get("barcode"), p.get("name", ""), p.get("brand"), p.get("image_url"), p.get("category"), p.get("nutrition_json", "{}"))
+                    )
+                except Exception as e:
+                    raise ValueError(f"Produit #{idx} invalide: {str(e)}")
             imported["products"] = len(data["products"])
 
         # Import frigo
         if "fridge" in data:
-            for item in data["fridge"]:
-                db.execute(
-                    "INSERT INTO fridge_items (name, barcode, image_url, category, quantity, unit, dlc, nutrition_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (item.get("name"), item.get("barcode"), item.get("image_url"), item.get("category"),
-                     item.get("quantity", 1), item.get("unit", "unité"), item.get("dlc"),
-                     item.get("nutrition_json", "{}"), item.get("status", "active"))
-                )
+            if not isinstance(data["fridge"], list):
+                raise ValueError("'fridge' doit être une liste")
+            for idx, item in enumerate(data["fridge"]):
+                try:
+                    db.execute(
+                        "INSERT INTO fridge_items (name, barcode, image_url, category, quantity, unit, dlc, nutrition_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (item.get("name"), item.get("barcode"), item.get("image_url"), item.get("category"),
+                         item.get("quantity", 1), item.get("unit", "unité"), item.get("dlc"),
+                         item.get("nutrition_json", "{}"), item.get("status", "active"))
+                    )
+                except Exception as e:
+                    raise ValueError(f"Article frigo #{idx} invalide: {str(e)}")
             imported["fridge"] = len(data["fridge"])
 
         # Import recettes
         if "recipes" in data:
-            for r in data["recipes"]:
-                db.execute(
-                    "INSERT INTO recipes (title, ingredients_json, instructions, prep_time, cook_time, servings, source_url, image_url, tags_json, diet_tags_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (r.get("title"), r.get("ingredients_json", "[]"), r.get("instructions"),
-                     r.get("prep_time", 0), r.get("cook_time", 0), r.get("servings", 4),
-                     r.get("source_url"), r.get("image_url"), r.get("tags_json", "[]"), r.get("diet_tags_json", "[]"))
-                )
+            if not isinstance(data["recipes"], list):
+                raise ValueError("'recipes' doit être une liste")
+            for idx, r in enumerate(data["recipes"]):
+                try:
+                    db.execute(
+                        "INSERT INTO recipes (title, ingredients_json, instructions, prep_time, cook_time, servings, source_url, image_url, tags_json, diet_tags_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (r.get("title"), r.get("ingredients_json", "[]"), r.get("instructions"),
+                         r.get("prep_time", 0), r.get("cook_time", 0), r.get("servings", 4),
+                         r.get("source_url"), r.get("image_url"), r.get("tags_json", "[]"), r.get("diet_tags_json", "[]"))
+                    )
+                except Exception as e:
+                    raise ValueError(f"Recette #{idx} invalide: {str(e)}")
             imported["recipes"] = len(data["recipes"])
 
         # Import settings
         if "settings" in data:
-            for s in data["settings"]:
-                db.execute(
-                    "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
-                    (s.get("key"), s.get("value", ""))
-                )
+            if not isinstance(data["settings"], list):
+                raise ValueError("'settings' doit être une liste")
+            for idx, s in enumerate(data["settings"]):
+                try:
+                    db.execute(
+                        "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                        (s.get("key"), s.get("value", ""))
+                    )
+                except Exception as e:
+                    raise ValueError(f"Setting #{idx} invalide: {str(e)}")
             imported["settings"] = len(data["settings"])
 
+        # COMMIT si tout réussit
         db.commit()
-        return {"success": True, "imported": imported, "message": "Données importées avec succès."}
+        return {
+            "success": True,
+            "imported": imported,
+            "message": f"Données importées avec succès. {sum(imported.values())} lignes ajoutées."
+        }
+    
     except Exception as e:
-        raise HTTPException(500, f"Erreur lors de l'import : {str(e)}")
+        # ROLLBACK si erreur!
+        try:
+            db.rollback()
+        except:
+            pass
+        
+        error_msg = str(e)
+        import logging
+        logging.getLogger("frigoscan").error(f"Import échoué, ROLLBACK: {e}")
+        
+        raise HTTPException(
+            500,
+            f"Erreur import: {error_msg}. Aucune donnée n'a été modifiée."
+        )
+    
     finally:
         db.close()
 

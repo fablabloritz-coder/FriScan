@@ -17,26 +17,32 @@ def list_fridge_items(
     category: str = None,
     sort: str = "added_at",
     filter_dlc: str = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500),
 ):
     """
-    Liste le contenu du frigo.
+    Liste le contenu du frigo avec pagination.
     filter_dlc: 'soon' (DLC < 3 jours), 'expired' (DLC dépassée), None (tout)
     """
     db = get_db()
     try:
         query = "SELECT * FROM fridge_items WHERE status = ?"
+        count_query = "SELECT COUNT(*) FROM fridge_items WHERE status = ?"
         params = [status]
 
         if category:
             query += " AND category = ?"
+            count_query += " AND category = ?"
             params.append(category)
 
         if filter_dlc == "soon":
             soon = (date.today() + timedelta(days=3)).isoformat()
             query += " AND dlc IS NOT NULL AND dlc <= ? AND dlc >= ?"
+            count_query += " AND dlc IS NOT NULL AND dlc <= ? AND dlc >= ?"
             params.extend([soon, date.today().isoformat()])
         elif filter_dlc == "expired":
             query += " AND dlc IS NOT NULL AND dlc < ?"
+            count_query += " AND dlc IS NOT NULL AND dlc < ?"
             params.append(date.today().isoformat())
 
         sort_map = {
@@ -47,7 +53,15 @@ def list_fridge_items(
         }
         query += f" ORDER BY {sort_map.get(sort, 'added_at DESC')}"
 
-        rows = db.execute(query, params).fetchall()
+        # Total pour pagination
+        total = db.execute(count_query, params).fetchone()[0]
+        
+        # Pagination
+        offset = (page - 1) * limit
+        query += f" LIMIT ? OFFSET ?"
+        query_params = params + [limit, offset]
+
+        rows = db.execute(query, query_params).fetchall()
         items = rows_to_list(rows)
 
         # Enrichir avec statut DLC
@@ -71,7 +85,16 @@ def list_fridge_items(
             else:
                 item["dlc_status"] = "none"
 
-        return {"success": True, "items": items, "count": len(items)}
+        pages = (total + limit - 1) // limit  # Ceiling division
+        return {
+            "success": True,
+            "data": items,
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": pages,
+            "count": len(items)
+        }
     finally:
         db.close()
 

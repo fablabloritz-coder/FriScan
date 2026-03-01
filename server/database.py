@@ -16,10 +16,17 @@ DB_PATH = DB_DIR / "frigoscan.db"
 def get_db() -> sqlite3.Connection:
     """Retourne une connexion SQLite avec row_factory = Row."""
     DB_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
+    
+    # Connexion avec timeout pour éviter les crashes au lock
+    conn = sqlite3.connect(
+        str(DB_PATH),
+        timeout=5.0,  # 5s timeout before locked error
+        isolation_level='DEFERRED'  # Transactions plus intelligentes
+    )
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA busy_timeout=5000")  # 5s en millisecondes aussi
     return conn
 
 
@@ -137,6 +144,36 @@ CREATE TABLE IF NOT EXISTS banned_recipes (
 );
 """
 
+# Indices pour améliorer les performances (Action 7)
+INDEX_SQL = """
+CREATE INDEX IF NOT EXISTS idx_fridge_status 
+ON fridge_items(status);
+
+CREATE INDEX IF NOT EXISTS idx_fridge_dlc 
+ON fridge_items(dlc);
+
+CREATE INDEX IF NOT EXISTS idx_fridge_name 
+ON fridge_items(name);
+
+CREATE INDEX IF NOT EXISTS idx_fridge_barcode 
+ON fridge_items(barcode);
+
+CREATE INDEX IF NOT EXISTS idx_fridge_category 
+ON fridge_items(category);
+
+CREATE INDEX IF NOT EXISTS idx_consumption_date 
+ON consumption_history(consumed_at);
+
+CREATE INDEX IF NOT EXISTS idx_recipes_title 
+ON recipes(title);
+
+CREATE INDEX IF NOT EXISTS idx_products_barcode 
+ON products(barcode);
+
+CREATE INDEX IF NOT EXISTS idx_shopping_category 
+ON shopping_list(category);
+"""
+
 DEFAULT_SETTINGS = {
     "theme": "light",
     "language": "fr",
@@ -163,6 +200,7 @@ def init_db():
     conn = get_db()
     try:
         conn.executescript(SCHEMA_SQL)
+        conn.executescript(INDEX_SQL)  # Ajouter les indices pour perf
         for key, value in DEFAULT_SETTINGS.items():
             conn.execute(
                 "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
