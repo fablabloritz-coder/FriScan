@@ -185,10 +185,11 @@ def generate_demo_data():
             )
         
         # Ajouter quelques aliments avec DLC proches (pour démonstration des alertes)
+        # Calculé dynamiquement par rapport au jour de génération pour cohérence
         demo_expiring = [
-            ("Yaourt périmé", "produit-laitier", today - timedelta(days=2)),  # Périmé hier
-            ("Lait bientôt périmé", "produit-laitier", today + timedelta(days=1)),  # Périmé demain
-            ("Fromage à consommer", "produit-laitier", today + timedelta(days=2)),  # Dans 2 jours (bientôt périmé)
+            ("Yaourt périmé", "produit-laitier", today - timedelta(days=2)),  # Périmé il y a 2 jours
+            ("Lait bientôt périmé", "produit-laitier", today + timedelta(days=1)),  # Bientôt périmé (demain)
+            ("Fromage à consommer", "produit-laitier", today + timedelta(days=2)),  # À consommer rapidement (dans 2 jours)
         ]
         for name, category, dlc in demo_expiring:
             db.execute(
