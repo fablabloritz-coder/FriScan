@@ -88,7 +88,7 @@ def list_fridge_items(
         pages = (total + limit - 1) // limit  # Ceiling division
         return {
             "success": True,
-            "data": items,
+            "items": items,
             "page": page,
             "limit": limit,
             "total": total,
