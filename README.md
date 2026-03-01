@@ -1,301 +1,199 @@
-# 🧊 FriScan — Gestionnaire Intelligent de Frigo
+# 🧊 FrigoScan
 
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/FastAPI-0.104%2B-009688?logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white" alt="SQLite">
-  <img src="https://img.shields.io/badge/Licence-MIT-green?logo=opensourceinitiative&logoColor=white" alt="MIT License">
-  <img src="https://img.shields.io/badge/Platform-Surface%20Pro-0078D4?logo=windows&logoColor=white" alt="Surface Pro">
-</p>
+> **Refonte complète v2.0** — Cette version est une réécriture intégrale de la première version du projet, repensée de zéro à partir du cahier des charges.
 
-<p align="center">
-  <a href="#-fonctionnalités"><strong>Fonctionnalités</strong></a> ·
-  <a href="#-installation"><strong>Installation</strong></a> ·
-  <a href="#-utilisation"><strong>Utilisation</strong></a> ·
-  <a href="#-contribuer"><strong>Contribuer</strong></a> ·
-  <a href="#-licence"><strong>Licence</strong></a>
-</p>
+**FrigoScan** est une application web tactile de gestion de frigo, optimisée pour Surface Pro, tablettes et PC. Elle facilite l'ajout, le suivi et la gestion des produits alimentaires, propose des recettes adaptées, aide à limiter le gaspillage, et accompagne l'utilisateur dans l'organisation de ses courses et repas.
 
----
-
-## 📖 Présentation
-
-**FriScan** est un système autonome open-source conçu pour être **emmené en courses sur une tablette Surface Pro**. Il permet de :
-
-- **Scanner les produits** en magasin (douchette USB ou webcam intégrée)
-- **Suivre les dates limites de consommation** (saisie vocale ou calendrier tactile)
-- **Gérer le contenu du frigo** à distance
-- **Recevoir des suggestions de recettes** adaptées aux produits disponibles
-
-### 🎯 Concept
-
-L'idée est simple : vous emportez votre Surface Pro au supermarché. Chaque produit ajouté au chariot est scanné en temps réel. La date de péremption est dictée au micro ou sélectionnée sur un calendrier tactile. En rentrant, votre frigo virtuel est déjà à jour.
-
-| Scénario | Comment ça marche |
-|----------|-------------------|
-| **En magasin** | Scanner les codes-barres → dicter/sélectionner la date → produit ajouté |
-| **À la maison** | Consulter le frigo, voir les produits bientôt périmés, obtenir des idées recettes |
-| **Au quotidien** | Alertes de péremption, suggestions de recettes pour éviter le gaspillage |
+![FrigoScan](images/logo_frigoscan.png)
 
 ---
 
 ## ✨ Fonctionnalités
 
-### Scanner de codes-barres
-- 📷 **Webcam** : scan via la caméra intégrée de la Surface Pro
-- 🔄 **Changement de caméra** : bascule entre la webcam avant et arrière
-- 💡 **Flash / Torche** : activation du flash pour scanner en faible luminosité
-- 🔫 **Douchette USB** : support des scanners USB (émulation clavier)
-- ⌨️ **Saisie manuelle** : champ texte pour entrer le code-barres à la main
+### 📷 Scan rapide
+- Scan par **webcam** ou **douchette USB** (code-barres EAN)
+- Multi-caméra, résolution et focus configurables
+- Bip sonore configurable (fréquence, volume)
+- Recherche automatique via **Open Food Facts** (nom, marque, nutrition, image)
+- Panier temporaire avant transfert au frigo
+- Saisie vocale de la DLC
 
-### Saisie de la date de péremption
-- 🎤 **Reconnaissance vocale** : dictez la date en français ("quinze mars 2026")
-- 📅 **Calendrier tactile** : sélecteur grand format optimisé pour l'écran tactile
-- 🔊 **Environnement bruyant** : conçu pour fonctionner avec le micro intégré de la tablette
+### ➕ Ajout manuel
+- 15 catégories d'aliments avec 150+ produits prédéfinis
+- Grille tactile avec emojis, saisie rapide de quantité et DLC estimée
+- Possibilité d'ajouter des produits personnalisés dans chaque catégorie
+- Personnalisation des icônes (emojis) depuis les réglages
 
-### Gestion du frigo
-- 📦 **Ajout automatique** via Open Food Facts (nom, marque, catégorie, Nutri-Score, image)
-- 🥕 **Produits frais** : ajout manuel pour fruits, légumes, viande à la coupe, etc.
-- ⚠️ **Alertes péremption** : notifications pour les produits proches de la date limite
-- 🔍 **Recherche et filtres** : retrouvez vos produits rapidement
+### 🧊 Gestion du frigo
+- Liste complète : nom, image, date d'ajout, DLC, catégorie
+- Filtres : tout, bientôt périmés, DLC dépassée
+- Tri : date d'ajout, DLC, nom, catégorie
+- Actions rapides : consommer, prolonger DLC, supprimer
 
-### Recettes intelligentes
-- 🍳 **Suggestions adaptées** : recettes basées sur le contenu réel de votre frigo
-- ♻️ **Anti-gaspillage** : priorisation des produits bientôt périmés
-- 📚 **Base extensible** : 20+ recettes françaises, extensible via JSON
+### 🍳 Recettes & Suggestions
+- Suggestions basées sur le contenu du frigo avec **score de correspondance**
+- Sources : **TheMealDB** (en ligne) + base locale de secours (12 recettes françaises)
+- Filtrage par régime alimentaire (végétarien, végan, pesco-végétarien, halal, casher, sans gluten, sans lactose, régime personnalisé)
+- Affichage visuel des ingrédients disponibles/manquants
+- Ajout des ingrédients manquants à la liste de courses
+- Détection des allergènes
 
-### Interface tactile
-- 📱 **Optimisée Surface Pro** : boutons larges, zones de touche généreuses
-- 🖐️ **Touch-first** : conçue pour l'interaction au doigt
-- 📏 **Responsive** : s'adapte à toutes les tailles d'écran
+### 📅 Menu de la semaine
+- Génération automatique (déjeuner + dîner, 7 jours)
+- Deux modes : avant ou après les courses
+- Respect des régimes alimentaires configurés
+- Navigation semaine par semaine
+
+### 🌿 Produits de saison
+- Fruits et légumes de saison en France, mois par mois
+- Grille tactile avec emojis et catégories
+
+### 🛒 Liste de courses
+- Ajout manuel ou automatique (stocks bas, menu de la semaine)
+- Gestion des articles achetés/restants
+
+### 📊 Statistiques
+- KPI : produits consommés, gaspillage
+- Graphiques : top produits, par catégorie, par jour, par mois
+
+### ⚙️ Réglages
+- Profil alimentaire : régimes (multi-sélection), allergènes, régime personnalisé
+- Configuration scanner : caméra, résolution, bip, intervalle
+- Personnalisation des icônes d'ajout manuel
+- Export/import (JSON, CSV), sauvegarde/restauration BDD
+- Thème sombre/clair
+- Zone dangereuse : vider le frigo, réinitialiser l'application
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture technique
+
+| Couche | Technologie |
+|--------|-------------|
+| **Backend** | Python 3.10+ / FastAPI / Uvicorn |
+| **Base de données** | SQLite (mode WAL) |
+| **Frontend** | HTML5 / CSS3 / JavaScript vanilla (SPA) |
+| **Scan** | html5-qrcode (webcam) + support douchette USB |
+| **API produits** | Open Food Facts (gratuit, open-source) |
+| **API recettes** | TheMealDB (gratuit) |
+| **Icônes** | Font Awesome 6.5.1 |
+
+### Structure du projet
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              SURFACE PRO (Tablette en magasin)              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
-│  │ Scanner  │  │  Saisie  │  │  Liste   │  │  Recettes  │  │
-│  │ barcode  │  │ vocale   │  │  frigo   │  │  suggérées │  │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └─────┬──────┘  │
-│       │              │             │               │         │
-└───────┼──────────────┼─────────────┼───────────────┼─────────┘
-        │              │             │               │
-        ▼              ▼             ▼               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   SERVEUR BACKEND (FastAPI)                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
-│  │ API      │  │ Open     │  │ Gestion  │  │ Moteur     │  │
-│  │ Scanner  │  │ Food     │  │ Produits │  │ Recettes   │  │
-│  │          │  │ Facts    │  │          │  │            │  │
-│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
-│                         │                                    │
-│                    ┌────┴────┐                               │
-│                    │ SQLite  │                               │
-│                    │   DB    │                               │
-│                    └─────────┘                               │
-└─────────────────────────────────────────────────────────────┘
+FrigoScan/
+├── index.html                 # SPA principale
+├── start.bat                  # Script de lancement Windows
+├── requirements.txt           # Dépendances Python
+├── server/
+│   ├── main.py               # Point d'entrée FastAPI
+│   ├── database.py           # Schéma SQLite, helpers
+│   ├── models.py             # Modèles Pydantic
+│   ├── routers/              # 9 routers API
+│   │   ├── scan.py           # Scan code-barres
+│   │   ├── fridge.py         # Gestion du frigo
+│   │   ├── recipes.py        # Recettes
+│   │   ├── menus.py          # Menu de la semaine
+│   │   ├── shopping.py       # Liste de courses
+│   │   ├── stats.py          # Statistiques
+│   │   ├── settings.py       # Réglages
+│   │   ├── seasonal.py       # Produits de saison
+│   │   └── export_import.py  # Export/Import
+│   ├── services/             # Services métier
+│   │   ├── openfoodfacts.py  # API Open Food Facts
+│   │   ├── recipe_service.py # API TheMealDB + filtres
+│   │   └── seasonal_service.py
+│   └── data/
+│       ├── seasonal_products.json  # Produits de saison (France)
+│       └── local_recipes.json      # Recettes locales de secours
+└── static/
+    ├── css/style.css         # CSS responsive, dark/light
+    └── js/
+        ├── app.js            # Core SPA, navigation, API
+        ├── scanner.js        # Scan webcam/douchette
+        ├── manual-add.js     # Ajout manuel par catégorie
+        ├── fridge.js         # Affichage frigo
+        ├── recipes.js        # Recherche/suggestions recettes
+        ├── menus.js          # Menu de la semaine
+        ├── seasonal.js       # Produits de saison
+        ├── shopping.js       # Liste de courses
+        ├── stats.js          # Statistiques
+        └── settings.js       # Réglages
 ```
 
-> 📄 Documentation technique détaillée : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
 ---
 
-## 🛠️ Technologies
+## 🚀 Installation & Lancement
 
-| Composant | Technologie | Rôle |
-|-----------|------------|------|
-| Backend | Python + FastAPI | API REST, logique métier |
-| Base de données | SQLite | Stockage produits, recettes |
-| Scanner barcode | OpenCV + pyzbar | Décodage codes-barres |
-| Webcam | MediaDevices API | Accès caméras, switch, flash |
-| Reconnaissance vocale | Web Speech API | Saisie vocale des dates |
-| Données produits | Open Food Facts API | Infos nutritionnelles |
-| Frontend | HTML/CSS/JS (vanilla) | Interface tactile |
-| Recettes | Base locale JSON + algorithme | Suggestions adaptées |
+### Prérequis
+- **Python 3.10+** installé et dans le PATH
+- Connexion internet (pour le premier `pip install` et les API en ligne)
 
----
-
-## 📋 Prérequis
-
-- **Python 3.10+** ([télécharger](https://www.python.org/downloads/))
-- **Windows 10/11** (Surface Pro ou PC)
-- **Navigateur moderne** : Edge, Chrome ou Firefox
-- **Webcam** et/ou **douchette USB** (optionnel pour les tests)
-- **Connexion Internet** (pour Open Food Facts — le scan offline fonctionne aussi)
-
----
-
-## 🚀 Installation
-
-### Méthode rapide (Windows)
-
+### Lancement rapide (Windows)
 ```bash
-# Double-cliquez simplement sur :
+# Double-cliquer sur start.bat
+# Ou depuis un terminal :
 start.bat
 ```
 
-Le script crée automatiquement l'environnement virtuel, installe les dépendances et lance le serveur.
+Le script `start.bat` :
+1. Vérifie et libère le port 8000
+2. Crée un environnement virtuel Python si nécessaire
+3. Installe les dépendances
+4. Lance le serveur sur http://localhost:8000
+5. Ouvre le navigateur automatiquement
 
-### Méthode manuelle
-
+### Lancement manuel
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/fablabloritz-coder/FriScan.git
-cd FriScan
-
-# 2. Créer l'environnement virtuel
+# Créer l'environnement virtuel
 python -m venv venv
+venv\Scripts\activate
 
-# 3. Activer l'environnement
-venv\Scripts\activate        # Windows (CMD)
-venv\Scripts\Activate.ps1    # Windows (PowerShell)
-source venv/bin/activate     # Linux/macOS
-
-# 4. Installer les dépendances
+# Installer les dépendances
 pip install -r requirements.txt
 
-# 5. Lancer le serveur
-python -m uvicorn server.app:app --reload --host 0.0.0.0 --port 8000
+# Lancer le serveur
+uvicorn server.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Accéder à l'application
-
-| URL | Description |
-|-----|-------------|
-| `http://localhost:8000` | Interface principale |
-| `http://localhost:8000/docs` | Documentation API (Swagger UI) |
-| `http://<ip-local>:8000` | Accès depuis un autre appareil sur le réseau |
+Accéder à l'application : **http://localhost:8000**
 
 ---
 
-## 📱 Utilisation
+## 📡 API
 
-### 1. Scanner un produit
+L'application expose une API REST complète :
 
-1. Ouvrez l'onglet **Scanner**
-2. Choisissez votre méthode :
-   - **Webcam** : cliquez "Démarrer la caméra" → présentez le code-barres → cliquez "Scanner"
-   - **Douchette USB** : cliquez dans le champ texte → scannez avec la douchette
-   - **Manuel** : tapez le code-barres dans le champ
-3. Le produit est automatiquement recherché sur Open Food Facts
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/scan/barcode/{code}` | Recherche produit par code-barres |
+| `GET/POST /api/fridge/` | Liste / Ajoute des produits au frigo |
+| `POST /api/fridge/{id}/consume` | Consommer un produit |
+| `GET /api/recipes/suggest` | Suggestions de recettes |
+| `POST /api/menus/generate` | Générer le menu de la semaine |
+| `GET /api/seasonal/` | Produits de saison |
+| `GET/POST /api/shopping/` | Liste de courses |
+| `GET /api/stats/summary` | Statistiques de consommation |
+| `GET/PUT /api/settings/` | Réglages utilisateur |
+| `GET /api/export/all/json` | Export complet |
 
-### 2. Ajouter la date de péremption
-
-- **Vocalement** : cliquez 🎤 et dites la date ("vingt-cinq mars deux mille vingt-six")
-- **Manuellement** : utilisez le calendrier tactile (gros boutons, facile au doigt)
-
-### 3. Gérer le frigo
-
-- Consultez la liste de vos produits dans l'onglet **Mon Frigo**
-- Filtrez par état : tous, dans le frigo, bientôt périmés, périmés
-- Modifiez la quantité ou supprimez des produits
-
-### 4. Obtenir des recettes
-
-- Allez dans l'onglet **Recettes**
-- Cliquez "Générer des suggestions"
-- Les recettes sont triées par pertinence (produits disponibles + péremption proche)
+Documentation interactive : **http://localhost:8000/docs**
 
 ---
 
-## 📁 Structure du projet
+## 📋 Cahier des charges
 
-```
-FriScan/
-├── 📄 README.md                 # Ce fichier
-├── 📄 LICENSE                   # Licence MIT
-├── 📄 CONTRIBUTING.md           # Guide de contribution
-├── 📄 CHANGELOG.md              # Historique des changements
-├── 📄 SECURITY.md               # Politique de sécurité
-├── 📄 CODE_OF_CONDUCT.md        # Code de conduite
-├── 📄 requirements.txt          # Dépendances Python
-├── 📄 start.bat                 # Lancement rapide (Windows)
-├── 📄 .gitignore                # Fichiers ignorés par Git
-│
-├── 📂 server/                   # Backend FastAPI
-│   ├── app.py                   # Point d'entrée FastAPI
-│   ├── database.py              # Configuration SQLite
-│   ├── models.py                # Modèles de données
-│   ├── 📂 routers/
-│   │   ├── products.py          # CRUD produits
-│   │   ├── scanner.py           # Endpoint scan barcode
-│   │   ├── recipes.py           # Suggestions recettes
-│   │   └── fresh_products.py    # Produits frais (sans barcode)
-│   ├── 📂 services/
-│   │   ├── openfoodfacts.py     # Client API Open Food Facts
-│   │   ├── barcode.py           # Logique scan barcode
-│   │   └── recipe_engine.py     # Moteur de suggestions
-│   └── 📂 data/
-│       ├── fresh_products.json  # Base de produits frais
-│       └── recipes.json         # Base de recettes locale
-│
-├── 📂 static/                   # Frontend (interface tactile)
-│   ├── index.html               # Page principale
-│   ├── 📂 css/
-│   │   └── style.css            # Styles (optimisés tactile)
-│   └── 📂 js/
-│       ├── app.js               # Logique principale
-│       ├── scanner.js           # Module scanner webcam
-│       └── voice.js             # Module reconnaissance vocale
-│
-├── 📂 docs/                     # Documentation
-│   └── ARCHITECTURE.md          # Architecture technique détaillée
-│
-└── 📂 .github/                  # Configuration GitHub
-    ├── 📂 workflows/
-    │   └── ci.yml               # Intégration continue
-    ├── 📂 ISSUE_TEMPLATE/
-    │   ├── bug_report.md        # Template rapport de bug
-    │   └── feature_request.md   # Template demande de fonctionnalité
-    └── PULL_REQUEST_TEMPLATE.md # Template pull request
-```
+Le développement suit le [cahier des charges](CAHIER_DES_CHARGES.txt) qui détaille l'ensemble des fonctionnalités, contraintes et choix techniques du projet.
 
 ---
 
-## 🤝 Contribuer
+## 📝 Licence
 
-Les contributions sont les bienvenues ! Consultez le [Guide de contribution](CONTRIBUTING.md) pour commencer.
-
-1. **Fork** le projet
-2. Créez votre branche (`git checkout -b feature/ma-fonctionnalite`)
-3. **Commit** vos changements (`git commit -m 'Ajout de ma fonctionnalité'`)
-4. **Push** sur la branche (`git push origin feature/ma-fonctionnalite`)
-5. Ouvrez une **Pull Request**
+Projet développé par [FabLab Loritz](https://github.com/fablabloritz-coder).
 
 ---
 
-## 📝 Changelog
+## 🔄 Historique
 
-Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet des versions.
-
----
-
-## 🔒 Sécurité
-
-Si vous découvrez une vulnérabilité, consultez [SECURITY.md](SECURITY.md) pour les instructions de signalement.
-
----
-
-## 📜 Licence
-
-Ce projet est sous licence **MIT** — voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-Libre d'utilisation, modification et distribution.
-
----
-
-## 🙏 Remerciements
-
-- [Open Food Facts](https://world.openfoodfacts.org/) — Base de données produits alimentaires ouverte
-- [FastAPI](https://fastapi.tiangolo.com/) — Framework web Python moderne
-- [pyzbar](https://github.com/NaturalHistoryMuseum/pyzbar) — Décodeur de codes-barres
-- Icônes emoji natives pour une interface légère et universelle
-
----
-
-<p align="center">
-  Développé avec ❤️ au <strong>FabLab Loritz</strong>
-</p>
+- **v2.0** — Refonte complète. Réécriture intégrale du frontend et du backend. Nouvelle architecture SPA, nouveaux services, nouvelle base de données, interface tactile repensée.
+- **v1.0** — Première version (obsolète).

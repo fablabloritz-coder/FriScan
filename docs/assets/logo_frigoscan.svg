@@ -1,0 +1,17 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Frigo stylisé -->
+  <rect x="40" y="30" width="80" height="140" rx="16" fill="#e3f2fd" stroke="#90caf9" stroke-width="4"/>
+  <!-- Porte du frigo -->
+  <rect x="40" y="30" width="80" height="70" rx="12" fill="#ffffff" stroke="#90caf9" stroke-width="3"/>
+  <!-- Loupe sur la porte -->
+  <circle cx="80" cy="65" r="18" fill="none" stroke="#42a5f5" stroke-width="4"/>
+  <rect x="93" y="78" width="16" height="4" rx="2" fill="#42a5f5" transform="rotate(45 101 80)"/>
+  <!-- Aliments stylisés -->
+  <ellipse cx="70" cy="120" rx="10" ry="14" fill="#81c784" stroke="#388e3c" stroke-width="2"/>
+  <ellipse cx="100" cy="130" rx="8" ry="10" fill="#ffb74d" stroke="#f57c00" stroke-width="2"/>
+  <rect x="85" y="110" width="8" height="18" rx="3" fill="#b3e5fc" stroke="#0288d1" stroke-width="2"/>
+  <!-- Ombre -->
+  <ellipse cx="80" cy="175" rx="38" ry="8" fill="#b0bec5" opacity="0.3"/>
+  <!-- Texte -->
+  <text x="100" y="195" font-size="22" text-anchor="middle" fill="#1976d2" font-family="Arial, sans-serif">FrigoScan</text>
+</svg>

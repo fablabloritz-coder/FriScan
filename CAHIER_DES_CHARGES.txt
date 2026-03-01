@@ -1,0 +1,103 @@
+# Cahier des charges — FrigoScan
+
+FrigoScan est une application tactile optimisée pour Surface Pro (et tablettes/PC), permettant de gérer le contenu d’un frigo familial ou professionnel. Elle facilite l’ajout, le suivi et la gestion des produits alimentaires, propose des recettes adaptées, aide à limiter le gaspillage, et accompagne l’utilisateur dans l’organisation de ses courses et de ses repas.
+
+## Fonctionnalités principales
+
+1. **Dashboard à widgets tactiles**
+	- Page principale composée de cartes interactives : Scan rapide, Ajout manuel, Liste du frigo, Recettes, Statistiques, Réglages, Menu de la semaine, Produits de saison.
+	- Navigation fluide : swipe, scroll vertical, affichage en grand lors de la sélection, retour par bouton ou swipe.
+	- Personnalisation du dashboard (ordre, widgets visibles, mode sombre/clair).
+
+2. **Scan rapide**
+	- Scan par webcam ou douchette USB (prise en charge des deux modes).
+	- Multi-caméra, focus et résolution configurables (dans la limite du matériel).
+	- Bip sonore configurable (webcam), volume et son réglables.
+	- Fenêtre de scan adaptée, affichage du produit scanné (infos auto-renseignées si disponibles).
+	- Confirmation/modification avant ajout au panier temporaire.
+	- DLC via calendrier tactile ou saisie vocale.
+	- Gestion du panier temporaire avant transfert au frigo.
+	- Explication claire de chaque erreur.
+
+3. **Ajout manuel**
+	- Ajout de produits en vrac via boutons par catégorie (fruits, légumes, viandes, poissons, etc.).
+	- Grille de cartes aliments, saisie quantité/poids (presets), DLC estimée/modifiable.
+	- Autocomplétion pour produits non listés, création à la volée autorisée.
+
+4. **Gestion du frigo**
+	- Liste du contenu : nom, image, date d’ajout, DLC, apports nutritionnels.
+	- Tri et filtres : tout afficher, bientôt périmés, DLC dépassée, catégories nutritionnelles.
+	- Actions rapides : modification, suppression, consommé, prolonger DLC.
+
+5. **Recettes et Suggestions**
+	- Recettes selon le contenu du frigo et les régimes cumulés.
+	- Sources : internet (Open Food Facts, Marmiton), base locale de secours.
+	- Filtrage par régime alimentaire (sélection cumulée), score de correspondance, ingrédients manquants, instructions, temps de préparation.
+	- Suggestions d’alternatives en cas de produit manquant ou allergène détecté.
+	- Recettes adaptées pour consommer en priorité les produits à DLC courte ou en stock important.
+	- Quantités ajustées selon le nombre de personnes.
+
+6. **Menu de la semaine**
+	- Deux modes (réglable) :
+	  - Génération avant les courses : menu proposé, liste de courses générée, onglet dédié.
+	  - Génération après les courses : menu adapté au contenu réel du frigo.
+	- Propositions de menus quotidiens adaptés, modification possible, adaptation des quantités, export/impression.
+	- Recettes liées au frigo (mise à jour des stocks lors de la réalisation).
+	- La logique de la liste d’achat suit la préférence utilisateur.
+
+7. **Produits de saison**
+	- Onglet dédié affichant uniquement les produits de saison du moment (mois/région).
+	- Région fixée à “France” pour le moment.
+	- Grille tactile, image, nom, catégorie.
+	- Synchronisation possible depuis une base open data ou locale.
+
+8. **Gestion des stocks et liste d’achat**
+	- Stocks minimum pour chaque produit (condiments inclus).
+	- Alertes de stock bas, ajout automatique à la liste d’achat.
+	- Liste d’achat générée selon stocks et menu de la semaine.
+
+9. **Historique des consommations**
+	- Suivi des produits consommés : dates, quantités, utilisateur associé.
+	- Statistiques sur les habitudes alimentaires.
+
+10. **Export, import et sauvegarde des données**
+	 - Export/import du frigo, des recettes et des statistiques (CSV, Excel, PDF).
+	 - Sauvegarde/restauration de la base locale.
+
+11. **Mode offline complet**
+	 - Toutes les fonctionnalités doivent fonctionner hors-ligne, sauf celles nécessitant une ressource externe (synchronisation, open data, etc.).
+	 - En cas de coupure internet, l’application ne doit pas être bloquante et doit éviter les erreurs critiques ou les bugs.
+
+12. **Notifications**
+	 - Fonction non prioritaire pour le moment (push ou mail pour produits bientôt périmés, stocks bas, rappels de courses ou recettes).
+	 - À garder en option pour une évolution future.
+
+13. **Page paramètres**
+	 - Régimes alimentaires (multi-sélection).
+	 - Gestion des allergènes (multi-sélection, alertes, détection automatique).
+	 - Fréquence des courses (jours, semaines, mois).
+	 - Nombre de personnes (adapte quantités et recettes).
+	 - Configuration des recettes : privilégier DLC proche et/ou produits de saison (sélection multiple).
+	 - Bouton “Vider le frigo” avec double confirmation.
+	 - Intervalle de scan webcam (1 à 5 sec).
+	 - Choix par défaut caméra/micro, test des composants.
+	 - Résolution webcam (si possible).
+	 - Enregistrement automatique de la base locale.
+	 - Configuration du bip de scan.
+	 - Gestion de la synchronisation serveur (automatique et manuelle).
+	 - Export/Import de la base locale.
+	 - Gestion des notifications.
+	 - Langue de l’application.
+
+14. **Gestion et explication des erreurs**
+	 - Explication claire de chaque erreur (scan, caméra, réseau, base de données, etc.).
+	 - Affichage des erreurs, succès et conseils d’utilisation.
+	 - En cas d’erreur critique (perte de données, corruption), possibilité de repartir sur une base propre et neutre.
+
+15. **Exécution locale et gestion du port**
+	 - Application en local (port 8000), lancement via fichier .bat.
+	 - Vérification et kill du processus sur le port avant démarrage pour éviter les conflits.
+
+## Solutions techniques
+
+Le projet privilégie l’utilisation de solutions gratuites et open-source (API, bibliothèques, bases de données, etc.) pour garantir la pérennité, la flexibilité et l’accessibilité du logiciel. Aucun choix technique imposé : priorité à la fluidité, la performance et l’ergonomie.

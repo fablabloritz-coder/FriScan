@@ -1,55 +1,28 @@
-# ──────────────── Python ────────────────
+# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.egg-info/
-*.egg
-dist/
-build/
-eggs/
-*.whl
-
-# ──────────────── Virtual Environment ────────────────
+*.pyc
+*.pyo
 venv/
 .venv/
-env/
-ENV/
+*.egg-info/
+dist/
+build/
 
-# ──────────────── IDE / Editor ────────────────
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.project
-.classpath
-.settings/
 
-# ──────────────── OS ────────────────
-.DS_Store
+# OS
 Thumbs.db
-Desktop.ini
-ehthumbs.db
+.DS_Store
+desktop.ini
 
-# ──────────────── Database ────────────────
-*.db
-*.sqlite
-*.sqlite3
-server/data/*.db
-
-# ──────────────── Logs ────────────────
-*.log
-logs/
-
-# ──────────────── Environment Variables ────────────────
-.env
-.env.local
-.env.*.local
-
-# ──────────────── Distribution / Build ────────────────
-*.tar.gz
-*.zip
-
-# ──────────────── Workspace files ────────────────
-*.code-workspace
+# Node (si ajouté plus tard)
+node_modules/

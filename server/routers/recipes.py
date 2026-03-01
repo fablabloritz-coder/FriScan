@@ -1,59 +1,145 @@
 """
-FriScan — Router Recettes
-Suggestions de recettes basées sur le contenu du frigo.
+FrigoScan — Router Recettes.
 """
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from datetime import date, timedelta
 
-from server.database import get_db
-from server.models import ProductDB, RecipeSuggestion
-from server.services.recipe_engine import suggest_recipes
+from fastapi import APIRouter, HTTPException, Query
+from server.database import get_db, dict_from_row, rows_to_list
+from server.models import RecipeCreate
+from server.services.recipe_service import (
+    search_recipes_online, get_random_recipes, compute_match_score,
+    filter_by_diet, suggest_alternatives, load_local_recipes
+)
+import json
 
 router = APIRouter(prefix="/api/recipes", tags=["Recettes"])
 
 
-@router.get("/suggestions", response_model=list[RecipeSuggestion])
-def get_recipe_suggestions(
-    max_results: int = Query(10, ge=1, le=50),
-    min_match: float = Query(0.3, ge=0.0, le=1.0),
-    prioritize_expiring: bool = Query(True, description="Prioriser les produits bientôt périmés"),
-    expiry_days: int = Query(3, ge=1, le=30, description="Nb jours avant péremption pour alerte"),
-    diet: Optional[str] = Query(None, description="Régimes alimentaires (ex: vegetarien,vegan)"),
-    db: Session = Depends(get_db),
+@router.get("/")
+def list_recipes():
+    """Liste toutes les recettes en base locale."""
+    db = get_db()
+    try:
+        rows = db.execute("SELECT * FROM recipes ORDER BY created_at DESC").fetchall()
+        return {"success": True, "recipes": rows_to_list(rows)}
+    finally:
+        db.close()
+
+
+@router.get("/suggest")
+async def suggest_recipes(
+    max_results: int = 10,
+    min_score: float = 20.0,
+    prefer_dlc: bool = True,
+    prefer_seasonal: bool = False,
 ):
     """
-    Génère des suggestions de recettes basées sur les produits actuellement dans le frigo.
-    Les recettes utilisant des produits proches de la péremption sont priorisées.
-    Filtre optionnel par régime alimentaire.
+    Suggère des recettes adaptées au contenu du frigo.
+    Trie par score de correspondance.
     """
-    # Récupérer tous les produits dans le frigo
-    products = db.query(ProductDB).filter(ProductDB.is_in_fridge == True).all()
+    db = get_db()
+    try:
+        # Récupérer contenu du frigo
+        fridge_rows = db.execute("SELECT * FROM fridge_items WHERE status='active'").fetchall()
+        fridge_items = rows_to_list(fridge_rows)
 
-    if not products:
-        return []
+        if not fridge_items:
+            return {"success": True, "recipes": [], "message": "Le frigo est vide. Ajoutez des produits pour obtenir des suggestions."}
 
-    fridge_items = [p.name for p in products]
+        # Récupérer réglages
+        diets_row = db.execute("SELECT value FROM settings WHERE key='diets'").fetchone()
+        allergens_row = db.execute("SELECT value FROM settings WHERE key='allergens'").fetchone()
+        diets = json.loads(diets_row["value"]) if diets_row else []
+        allergens = json.loads(allergens_row["value"]) if allergens_row else []
 
-    # Identifier les produits proches de la péremption (configurable)
-    expiring_items = None
-    if prioritize_expiring:
-        today = date.today()
-        expiring_items = [
-            p.name for p in products
-            if p.expiry_date and (p.expiry_date - today).days <= expiry_days
-        ]
+        # Récupérer recettes locales (base + fichier)
+        db_recipes = rows_to_list(db.execute("SELECT * FROM recipes").fetchall())
+        local_recipes = load_local_recipes()
+        all_recipes = db_recipes + local_recipes
 
-    # Parse diet filter
-    diet_filter = None
-    if diet:
-        diet_filter = [d.strip() for d in diet.split(",") if d.strip()]
+        # Si pas assez de recettes locales, chercher en ligne
+        if len(all_recipes) < 20:
+            fridge_names = [item["name"] for item in fridge_items[:5]]
+            for name in fridge_names[:3]:
+                online = await search_recipes_online(name)
+                all_recipes.extend(online)
 
-    return suggest_recipes(
-        fridge_products=fridge_items,
-        max_results=max_results,
-        min_match_ratio=min_match,
-        prioritize_expiring=expiring_items,
-        diet_filter=diet_filter,
-    )
+        # Filtrer par régime
+        all_recipes = filter_by_diet(all_recipes, diets, allergens)
+
+        # Calculer scores
+        scored = []
+        for recipe in all_recipes:
+            ingredients_json = recipe.get("ingredients_json", "[]")
+            score, missing = compute_match_score(ingredients_json, fridge_items)
+            recipe["match_score"] = score
+            recipe["missing_ingredients"] = missing
+            if score >= min_score:
+                scored.append(recipe)
+
+        # Trier par score décroissant
+        scored.sort(key=lambda r: r.get("match_score", 0), reverse=True)
+
+        return {"success": True, "recipes": scored[:max_results]}
+    finally:
+        db.close()
+
+
+@router.get("/search")
+async def search_recipes(q: str = ""):
+    """Recherche de recettes (locale + en ligne)."""
+    if len(q) < 2:
+        raise HTTPException(400, "Recherche trop courte.")
+
+    db = get_db()
+    try:
+        # Recherche locale
+        local = db.execute(
+            "SELECT * FROM recipes WHERE LOWER(title) LIKE ? OR LOWER(ingredients_json) LIKE ?",
+            (f"%{q.lower()}%", f"%{q.lower()}%")
+        ).fetchall()
+        results = rows_to_list(local)
+
+        # Recherche en ligne
+        online = await search_recipes_online(q)
+        results.extend(online)
+
+        return {"success": True, "recipes": results}
+    finally:
+        db.close()
+
+
+@router.post("/")
+def add_recipe(recipe: RecipeCreate):
+    """Ajoute une recette à la base locale."""
+    db = get_db()
+    try:
+        cursor = db.execute(
+            """INSERT INTO recipes (title, ingredients_json, instructions, prep_time, cook_time, servings, source_url, image_url, tags_json, diet_tags_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (recipe.title, recipe.ingredients_json, recipe.instructions,
+             recipe.prep_time, recipe.cook_time, recipe.servings,
+             recipe.source_url, recipe.image_url, recipe.tags_json, recipe.diet_tags_json)
+        )
+        db.commit()
+        return {"success": True, "id": cursor.lastrowid, "message": f"Recette '{recipe.title}' ajoutée."}
+    finally:
+        db.close()
+
+
+@router.delete("/{recipe_id}")
+def delete_recipe(recipe_id: int):
+    """Supprime une recette."""
+    db = get_db()
+    try:
+        db.execute("DELETE FROM recipes WHERE id = ?", (recipe_id,))
+        db.commit()
+        return {"success": True, "message": "Recette supprimée."}
+    finally:
+        db.close()
+
+
+@router.get("/alternatives/{ingredient}")
+def get_alternatives(ingredient: str):
+    """Retourne des alternatives pour un ingrédient manquant."""
+    alts = suggest_alternatives(ingredient)
+    return {"success": True, "ingredient": ingredient, "alternatives": alts}

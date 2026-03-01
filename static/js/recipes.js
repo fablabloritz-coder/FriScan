@@ -1,0 +1,174 @@
+/**
+ * FrigoScan — Module Recettes (recipes.js)
+ * Recherche, suggestions, affichage détaillé.
+ */
+
+(function () {
+    const Recipes = {};
+    FrigoScan.Recipes = Recipes;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btn-recipe-search').addEventListener('click', searchRecipes);
+        document.getElementById('recipe-search').addEventListener('keydown', e => {
+            if (e.key === 'Enter') searchRecipes();
+        });
+        document.getElementById('btn-recipe-suggest').addEventListener('click', suggestRecipes);
+    });
+
+    async function searchRecipes() {
+        const query = document.getElementById('recipe-search').value.trim();
+        if (query.length < 2) {
+            FrigoScan.toast('Entrez au moins 2 caractères.', 'warning');
+            return;
+        }
+        const data = await FrigoScan.API.get(`/api/recipes/search?q=${encodeURIComponent(query)}`);
+        if (data.success) {
+            renderRecipes(data.recipes || []);
+        }
+    }
+
+    async function suggestRecipes() {
+        FrigoScan.toast('Recherche de suggestions en cours...', 'info');
+        const data = await FrigoScan.API.get('/api/recipes/suggest?max_results=12&min_score=10');
+        if (data.success) {
+            if (data.recipes.length === 0) {
+                FrigoScan.toast(data.message || 'Aucune suggestion trouvée.', 'warning');
+            }
+            renderRecipes(data.recipes || []);
+        }
+    }
+
+    function renderRecipes(recipes) {
+        const grid = document.getElementById('recipes-list');
+        const empty = document.getElementById('recipes-empty');
+
+        if (recipes.length === 0) {
+            grid.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        grid.innerHTML = recipes.map((r, idx) => {
+            const scoreClass = (r.match_score || 0) >= 70 ? 'high' : (r.match_score || 0) >= 40 ? 'medium' : 'low';
+            const scoreHtml = r.match_score !== undefined
+                ? `<span class="recipe-card-score ${scoreClass}"><i class="fas fa-bullseye"></i> ${r.match_score}%</span>`
+                : '';
+            const imgUrl = r.image_url || '';
+            const imgHtml = imgUrl
+                ? `<img class="recipe-card-img" src="${imgUrl}" alt="${r.title}" onerror="this.style.display='none'">`
+                : `<div class="recipe-card-img" style="display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--bg-hover);">🍳</div>`;
+
+            const prepTime = (r.prep_time || 0) + (r.cook_time || 0);
+
+            return `
+                <div class="recipe-card" data-recipe-idx="${idx}">
+                    ${imgHtml}
+                    <div class="recipe-card-body">
+                        <div class="recipe-card-title">${r.title}</div>
+                        <div class="recipe-card-meta">
+                            ${prepTime ? `<span><i class="fas fa-clock"></i> ${prepTime} min</span>` : ''}
+                            <span><i class="fas fa-users"></i> ${r.servings || 4} pers.</span>
+                            ${scoreHtml}
+                        </div>
+                        ${r.missing_ingredients && r.missing_ingredients.length
+                            ? `<div style="margin-top:6px;font-size:0.78rem;color:var(--text-muted);">
+                                   Manque : ${r.missing_ingredients.slice(0, 3).join(', ')}${r.missing_ingredients.length > 3 ? '...' : ''}
+                               </div>`
+                            : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Clic sur carte = détail
+        grid.querySelectorAll('.recipe-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const idx = parseInt(card.dataset.recipeIdx);
+                showRecipeDetail(recipes[idx]);
+            });
+        });
+    }
+
+    function showRecipeDetail(recipe) {
+        const modal = document.getElementById('recipe-detail-modal');
+        const content = document.getElementById('recipe-detail-content');
+
+        let ingredients = [];
+        try { ingredients = JSON.parse(recipe.ingredients_json || '[]'); } catch (e) {}
+
+        let tags = [];
+        try { tags = JSON.parse(recipe.tags_json || '[]'); } catch (e) {}
+
+        const imgHtml = recipe.image_url
+            ? `<img src="${recipe.image_url}" alt="${recipe.title}" style="width:100%;max-height:300px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:16px;">`
+            : '';
+
+        content.innerHTML = `
+            ${imgHtml}
+            <h2 style="margin-bottom:12px;">${recipe.title}</h2>
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                ${(recipe.prep_time || recipe.cook_time)
+                    ? `<span class="badge"><i class="fas fa-clock"></i> Prépa: ${recipe.prep_time || 0}min — Cuisson: ${recipe.cook_time || 0}min</span>`
+                    : ''}
+                <span class="badge"><i class="fas fa-users"></i> ${recipe.servings || 4} personnes</span>
+                ${recipe.match_score !== undefined ? `<span class="badge"><i class="fas fa-bullseye"></i> Compatibilité: ${recipe.match_score}%</span>` : ''}
+            </div>
+            ${tags.length ? `<div style="margin-bottom:12px;">${tags.map(t => `<span class="badge" style="margin:2px;">${t}</span>`).join('')}</div>` : ''}
+
+            <h3 style="margin-bottom:8px;">Ingrédients</h3>
+            <ul style="margin-bottom:16px;padding-left:20px;">
+                ${ingredients.map(i => `<li>${i.measure ? i.measure + ' ' : ''}${i.name}</li>`).join('')}
+            </ul>
+
+            ${recipe.missing_ingredients && recipe.missing_ingredients.length
+                ? `<div class="alert alert-warning">
+                    <strong>Ingrédients manquants :</strong> ${recipe.missing_ingredients.join(', ')}
+                   </div>`
+                : ''}
+
+            <h3 style="margin-bottom:8px;">Instructions</h3>
+            <div style="white-space:pre-line;line-height:1.7;">${recipe.instructions || 'Aucune instruction disponible.'}</div>
+
+            ${recipe.source_url ? `<a href="${recipe.source_url}" target="_blank" class="btn btn-secondary" style="margin-top:16px;"><i class="fas fa-external-link-alt"></i> Voir la source</a>` : ''}
+
+            <div style="margin-top:16px;">
+                <button class="btn btn-success" onclick="FrigoScan.Recipes.saveRecipe(this)" data-recipe='${JSON.stringify(recipe).replace(/'/g, "&apos;")}'>
+                    <i class="fas fa-bookmark"></i> Sauvegarder
+                </button>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+    }
+
+    Recipes.closeDetail = function () {
+        document.getElementById('recipe-detail-modal').classList.add('hidden');
+    };
+
+    Recipes.saveRecipe = async function (btn) {
+        const recipe = JSON.parse(btn.dataset.recipe);
+        const data = await FrigoScan.API.post('/api/recipes/', {
+            title: recipe.title,
+            ingredients_json: recipe.ingredients_json || '[]',
+            instructions: recipe.instructions || '',
+            prep_time: recipe.prep_time || 0,
+            cook_time: recipe.cook_time || 0,
+            servings: recipe.servings || 4,
+            source_url: recipe.source_url || '',
+            image_url: recipe.image_url || '',
+            tags_json: recipe.tags_json || '[]',
+            diet_tags_json: recipe.diet_tags_json || '[]',
+        });
+        if (data.success) {
+            FrigoScan.toast('Recette sauvegardée !', 'success');
+        }
+    };
+
+    // Fermer modal par clic extérieur
+    document.addEventListener('click', (e) => {
+        const modal = document.getElementById('recipe-detail-modal');
+        if (e.target === modal) Recipes.closeDetail();
+    });
+
+})();

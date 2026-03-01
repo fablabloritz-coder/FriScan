@@ -1,50 +1,93 @@
 @echo off
 chcp 65001 >nul
-
-title FriScan - Serveur localhost:8000
-color 0B
+title FrigoScan - Gestionnaire de frigo
+color 0A
 
 echo.
-echo  ╔══════════════════════════════════════════╗
-echo  ║     FriScan - Lancement du serveur      ║
-echo  ╚══════════════════════════════════════════╝
+echo  ╔═══════════════════════════════════════╗
+echo  ║        🧊 FrigoScan v1.0 🧊          ║
+echo  ║   Gestionnaire de frigo intelligent   ║
+echo  ╚═══════════════════════════════════════╝
 echo.
 
-:: Vérifier que l'environnement virtuel existe
-if not exist "venv\Scripts\activate.bat" (
-    echo  [ERREUR] Environnement virtuel introuvable.
-    echo  Lancez d'abord l'installation.
+REM --- Vérifier et tuer le processus sur le port 8000 ---
+echo [1/4] Vérification du port 8000...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000 " ^| findstr "LISTENING" 2^>nul') do (
+    echo       Port 8000 occupé par PID %%a - Arrêt en cours...
+    taskkill /F /PID %%a >nul 2>&1
+    timeout /t 2 /nobreak >nul
+)
+echo       Port 8000 libre.
+echo.
+
+REM --- Environnement Python ---
+echo [2/4] Configuration de l'environnement Python...
+cd /d "%~dp0"
+
+REM Vérifier si Python est disponible
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo  ❌ ERREUR : Python n'est pas installé ou pas dans le PATH.
+    echo     Téléchargez Python 3.10+ sur https://www.python.org/downloads/
     echo.
     pause
     exit /b 1
 )
 
-:: Activer l'environnement virtuel
-call venv\Scripts\activate.bat
-
-:: Tuer tout processus déjà en écoute sur le port 8000
-echo  [INFO] Vérification du port 8000...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000 " ^| findstr "LISTENING"') do (
-    echo  [WARN] Processus %%a détecté sur le port 8000, arrêt en cours...
-    taskkill /PID %%a /F >nul 2>&1
+REM Créer l'environnement virtuel si nécessaire
+if not exist "venv" (
+    echo       Création de l'environnement virtuel...
+    python -m venv venv
+    if errorlevel 1 (
+        echo  ❌ Erreur lors de la création du venv
+        pause
+        exit /b 1
+    )
 )
-:: Petit délai pour laisser le port se libérer
-timeout /t 1 /nobreak >nul
 
-echo  [OK] Port 8000 libre.
-echo.
-echo  ══════════════════════════════════════════
-echo   FriScan démarre sur http://localhost:8000
-    echo   Appuyez sur Ctrl+C pour arrêter le serveur
-    echo  ══════════════════════════════════════════
+REM Activer l'environnement virtuel
+call venv\Scripts\activate.bat
+echo       Environnement virtuel activé.
 echo.
 
-:: Ouvrir le navigateur automatiquement après un court délai
-start "" cmd /c "timeout /t 2 /nobreak >nul & start http://localhost:8000"
+REM --- Installation des dépendances ---
+echo [3/4] Vérification des dépendances...
+pip install -r requirements.txt --quiet --disable-pip-version-check 2>nul
+if errorlevel 1 (
+    echo       Installation complète des dépendances...
+    pip install -r requirements.txt --disable-pip-version-check
+    if errorlevel 1 (
+        echo  ❌ Erreur lors de l'installation des dépendances
+        pause
+        exit /b 1
+    )
+)
+echo       Dépendances OK.
+echo.
 
-:: Lancer le serveur FastAPI
-python -m uvicorn server.app:app --host 0.0.0.0 --port 8000
+REM --- Créer le dossier data si nécessaire ---
+if not exist "server\data" mkdir "server\data"
+
+REM --- Lancement du serveur ---
+echo [4/4] Lancement du serveur FrigoScan...
+echo.
+echo  ╔═══════════════════════════════════════╗
+echo  ║                                       ║
+echo  ║   Application accessible sur :        ║
+echo  ║   👉 http://localhost:8000            ║
+echo  ║                                       ║
+echo  ║   Appuyez sur Ctrl+C pour arrêter     ║
+echo  ║                                       ║
+echo  ╚═══════════════════════════════════════╝
+echo.
+
+REM Ouvrir le navigateur après un délai
+start "" cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:8000"
+
+REM Lancer uvicorn
+python -m uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
 
 echo.
-echo  [INFO] Serveur arrêté.
+echo  FrigoScan arrêté.
 pause

@@ -1,38 +1,181 @@
 """
-FriScan — Base de données SQLite avec SQLAlchemy
+FrigoScan — Module base de données SQLite.
+Gestion de la connexion, création du schéma et helpers CRUD.
 """
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+
+import sqlite3
+import json
 import os
+from datetime import datetime, date
+from pathlib import Path
 
-DB_DIR = os.path.join(os.path.dirname(__file__), "data")
-os.makedirs(DB_DIR, exist_ok=True)
-DB_PATH = os.path.join(DB_DIR, "friscan.db")
-
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},  # nécessaire pour SQLite
-    echo=False,
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+DB_DIR = Path(__file__).parent / "data"
+DB_PATH = DB_DIR / "frigoscan.db"
 
 
-class Base(DeclarativeBase):
-    pass
+def get_db() -> sqlite3.Connection:
+    """Retourne une connexion SQLite avec row_factory = Row."""
+    DB_DIR.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
 
 
-def get_db():
-    """Générateur de session DB pour FastAPI Depends."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def dict_from_row(row: sqlite3.Row | None) -> dict | None:
+    if row is None:
+        return None
+    return dict(row)
+
+
+def rows_to_list(rows: list[sqlite3.Row]) -> list[dict]:
+    return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Schéma
+# ---------------------------------------------------------------------------
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    barcode TEXT UNIQUE,
+    name TEXT NOT NULL,
+    brand TEXT,
+    image_url TEXT,
+    category TEXT,
+    nutrition_json TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fridge_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER,
+    name TEXT NOT NULL,
+    barcode TEXT,
+    image_url TEXT,
+    category TEXT DEFAULT 'autre',
+    quantity REAL DEFAULT 1,
+    unit TEXT DEFAULT 'unité',
+    dlc DATE,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    nutrition_json TEXT DEFAULT '{}',
+    status TEXT DEFAULT 'active',
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+CREATE TABLE IF NOT EXISTS consumption_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fridge_item_id INTEGER,
+    product_name TEXT NOT NULL,
+    category TEXT,
+    quantity REAL DEFAULT 1,
+    unit TEXT DEFAULT 'unité',
+    consumed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_name TEXT DEFAULT 'Famille'
+);
+
+CREATE TABLE IF NOT EXISTS recipes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    ingredients_json TEXT DEFAULT '[]',
+    instructions TEXT,
+    prep_time INTEGER DEFAULT 0,
+    cook_time INTEGER DEFAULT 0,
+    servings INTEGER DEFAULT 4,
+    source_url TEXT,
+    image_url TEXT,
+    tags_json TEXT DEFAULT '[]',
+    diet_tags_json TEXT DEFAULT '[]',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS weekly_menu (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    week_start DATE NOT NULL,
+    day_of_week INTEGER NOT NULL,
+    meal_type TEXT NOT NULL DEFAULT 'lunch',
+    recipe_id INTEGER,
+    recipe_title TEXT,
+    notes TEXT,
+    servings INTEGER DEFAULT 4,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+);
+
+CREATE TABLE IF NOT EXISTS shopping_list (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_name TEXT NOT NULL,
+    category TEXT DEFAULT 'autre',
+    quantity REAL DEFAULT 1,
+    unit TEXT DEFAULT 'unité',
+    is_purchased INTEGER DEFAULT 0,
+    source TEXT DEFAULT 'manual',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS stock_minimums (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_name TEXT NOT NULL UNIQUE,
+    category TEXT DEFAULT 'autre',
+    min_quantity REAL DEFAULT 1,
+    unit TEXT DEFAULT 'unité'
+);
+"""
+
+DEFAULT_SETTINGS = {
+    "theme": "light",
+    "language": "fr",
+    "nb_persons": "4",
+    "diets": "[]",
+    "allergens": "[]",
+    "shopping_frequency": "7",
+    "scan_interval": "2",
+    "scan_beep": "true",
+    "scan_beep_volume": "0.5",
+    "default_camera": "",
+    "webcam_resolution": "1280x720",
+    "recipe_prefer_dlc": "true",
+    "recipe_prefer_seasonal": "true",
+    "menu_mode": "after_shopping",
+    "auto_save": "true",
+    "notifications_enabled": "false",
+    "dashboard_widgets": '["scan","manual","fridge","recipes","menu","seasonal","shopping","stats"]',
+}
 
 
 def init_db():
-    """Crée toutes les tables dans la base de données."""
-    Base.metadata.create_all(bind=engine)
+    """Crée les tables et insère les réglages par défaut si absents."""
+    conn = get_db()
+    try:
+        conn.executescript(SCHEMA_SQL)
+        for key, value in DEFAULT_SETTINGS.items():
+            conn.execute(
+                "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+                (key, value),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def backup_db(dest_path: str | None = None) -> str:
+    """Crée une copie de sauvegarde de la base."""
+    if dest_path is None:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        dest_path = str(DB_DIR / f"frigoscan_backup_{ts}.db")
+    import shutil
+    shutil.copy2(str(DB_PATH), dest_path)
+    return dest_path
+
+
+def reset_db():
+    """Supprime et recrée la base (double confirmation côté client)."""
+    if DB_PATH.exists():
+        os.remove(str(DB_PATH))
+    init_db()

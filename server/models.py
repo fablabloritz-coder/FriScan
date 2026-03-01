@@ -1,109 +1,180 @@
 """
-FriScan — Modèles de données (SQLAlchemy + Pydantic)
+FrigoScan — Modèles Pydantic pour la validation des données.
 """
-from datetime import datetime, date
-from typing import Optional
-from sqlalchemy import String, Float, Date, DateTime, Text, Integer
-from sqlalchemy.orm import Mapped, mapped_column
+
 from pydantic import BaseModel, Field
-
-from server.database import Base
-
-
-# ──────────────────────────── SQLAlchemy Models ────────────────────────────
+from typing import Optional
+from datetime import date, datetime
 
 
-class ProductDB(Base):
-    """Produit stocké dans le frigo."""
-    __tablename__ = "products"
+# ---------------------------------------------------------------------------
+# Produits
+# ---------------------------------------------------------------------------
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    barcode: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    brand: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    category: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    quantity: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    nutriscore: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)
-    expiry_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    amount: Mapped[int] = mapped_column(Integer, default=1)
-    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    added_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    is_in_fridge: Mapped[bool] = mapped_column(default=True)
-
-
-# ──────────────────────────── Pydantic Schemas ─────────────────────────────
-
-
-class ProductCreate(BaseModel):
-    """Schéma pour créer/ajouter un produit."""
+class ProductBase(BaseModel):
     barcode: Optional[str] = None
-    name: str = Field(..., min_length=1, max_length=255)
+    name: str
     brand: Optional[str] = None
-    category: Optional[str] = None
     image_url: Optional[str] = None
-    quantity: Optional[str] = None
-    nutriscore: Optional[str] = None
-    expiry_date: Optional[date] = None
-    amount: int = 1
-    notes: Optional[str] = None
+    category: Optional[str] = "autre"
+    nutrition_json: Optional[str] = "{}"
 
 
-class ProductUpdate(BaseModel):
-    """Schéma pour modifier un produit."""
-    name: Optional[str] = None
-    brand: Optional[str] = None
-    category: Optional[str] = None
-    expiry_date: Optional[date] = None
-    amount: Optional[int] = None
-    is_in_fridge: Optional[bool] = None
+class ProductCreate(ProductBase):
+    pass
 
 
-class ProductResponse(BaseModel):
-    """Schéma de réponse pour un produit."""
+class ProductOut(ProductBase):
     id: int
+    created_at: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Frigo
+# ---------------------------------------------------------------------------
+
+class FridgeItemBase(BaseModel):
+    product_id: Optional[int] = None
+    name: str
     barcode: Optional[str] = None
-    name: str
-    brand: Optional[str] = None
-    category: Optional[str] = None
     image_url: Optional[str] = None
-    quantity: Optional[str] = None
-    nutriscore: Optional[str] = None
-    expiry_date: Optional[date] = None
-    amount: int
+    category: Optional[str] = "autre"
+    quantity: float = 1.0
+    unit: str = "unité"
+    dlc: Optional[str] = None
+    nutrition_json: Optional[str] = "{}"
+
+
+class FridgeItemCreate(FridgeItemBase):
+    pass
+
+
+class FridgeItemUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    dlc: Optional[str] = None
+    status: Optional[str] = None
+    nutrition_json: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class FridgeItemOut(FridgeItemBase):
+    id: int
+    added_at: Optional[str] = None
+    status: str = "active"
+
+
+# ---------------------------------------------------------------------------
+# Historique consommation
+# ---------------------------------------------------------------------------
+
+class ConsumptionCreate(BaseModel):
+    fridge_item_id: Optional[int] = None
+    product_name: str
+    category: Optional[str] = None
+    quantity: float = 1.0
+    unit: str = "unité"
+    user_name: str = "Famille"
+
+
+class ConsumptionOut(ConsumptionCreate):
+    id: int
+    consumed_at: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Recettes
+# ---------------------------------------------------------------------------
+
+class RecipeBase(BaseModel):
+    title: str
+    ingredients_json: str = "[]"
+    instructions: Optional[str] = None
+    prep_time: int = 0
+    cook_time: int = 0
+    servings: int = 4
+    source_url: Optional[str] = None
+    image_url: Optional[str] = None
+    tags_json: str = "[]"
+    diet_tags_json: str = "[]"
+
+
+class RecipeCreate(RecipeBase):
+    pass
+
+
+class RecipeOut(RecipeBase):
+    id: int
+    created_at: Optional[str] = None
+    match_score: Optional[float] = None
+    missing_ingredients: Optional[list[str]] = None
+
+
+# ---------------------------------------------------------------------------
+# Menu hebdo
+# ---------------------------------------------------------------------------
+
+class MenuEntry(BaseModel):
+    week_start: str
+    day_of_week: int = Field(ge=0, le=6)
+    meal_type: str = "lunch"
+    recipe_id: Optional[int] = None
+    recipe_title: Optional[str] = None
     notes: Optional[str] = None
-    added_at: datetime
-    is_in_fridge: bool
-    days_until_expiry: Optional[int] = None
-
-    model_config = {"from_attributes": True}
+    servings: int = 4
 
 
-class BarcodeRequest(BaseModel):
-    """Schéma pour une requête de scan barcode."""
-    barcode: str
+class MenuEntryOut(MenuEntry):
+    id: int
 
 
-class OpenFoodFactsProduct(BaseModel):
-    """Produit récupéré depuis Open Food Facts."""
-    barcode: str
-    name: str = "Produit inconnu"
-    brand: Optional[str] = None
-    category: Optional[str] = None
-    image_url: Optional[str] = None
-    quantity: Optional[str] = None
-    nutriscore: Optional[str] = None
+# ---------------------------------------------------------------------------
+# Liste de courses
+# ---------------------------------------------------------------------------
+
+class ShoppingItemBase(BaseModel):
+    product_name: str
+    category: Optional[str] = "autre"
+    quantity: float = 1.0
+    unit: str = "unité"
+    source: str = "manual"
 
 
-class RecipeSuggestion(BaseModel):
-    """Suggestion de recette."""
-    name: str
-    ingredients: list[str]
-    matched_ingredients: list[str]
-    missing_ingredients: list[str]
-    match_score: float = Field(..., ge=0.0, le=1.0)
-    instructions: str
-    prep_time: Optional[str] = None
-    servings: Optional[int] = None
-    image_url: Optional[str] = None
-    diet_tags: list[str] = []
+class ShoppingItemCreate(ShoppingItemBase):
+    pass
+
+
+class ShoppingItemOut(ShoppingItemBase):
+    id: int
+    is_purchased: bool = False
+    created_at: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Réglages
+# ---------------------------------------------------------------------------
+
+class SettingUpdate(BaseModel):
+    key: str
+    value: str
+
+
+class SettingBulkUpdate(BaseModel):
+    settings: list[SettingUpdate]
+
+
+# ---------------------------------------------------------------------------
+# Stock minimum
+# ---------------------------------------------------------------------------
+
+class StockMinimum(BaseModel):
+    product_name: str
+    category: Optional[str] = "autre"
+    min_quantity: float = 1.0
+    unit: str = "unité"
+
+
+class StockMinimumOut(StockMinimum):
+    id: int

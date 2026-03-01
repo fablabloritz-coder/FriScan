@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>FrigoScan</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+</head>
+<body>
+    <!-- ================================================================== -->
+    <!-- HEADER -->
+    <!-- ================================================================== -->
+    <header id="app-header">
+        <button id="btn-back" class="header-btn hidden" aria-label="Retour">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1 id="page-title">
+            <i class="fas fa-snowflake"></i> FrigoScan
+        </h1>
+        <button id="btn-theme" class="header-btn" aria-label="Basculer le thème">
+            <i class="fas fa-moon"></i>
+        </button>
+    </header>
+
+    <!-- ================================================================== -->
+    <!-- CONTENU PRINCIPAL -->
+    <!-- ================================================================== -->
+    <main id="app-content">
+
+        <!-- ============================================================ -->
+        <!-- DASHBOARD -->
+        <!-- ============================================================ -->
+        <section id="view-dashboard" class="view active">
+            <div class="dashboard-grid">
+                <button class="widget-card" data-view="scanner">
+                    <div class="widget-icon"><i class="fas fa-barcode"></i></div>
+                    <span class="widget-label">Scan rapide</span>
+                </button>
+                <button class="widget-card" data-view="manual-add">
+                    <div class="widget-icon"><i class="fas fa-plus-circle"></i></div>
+                    <span class="widget-label">Ajout manuel</span>
+                </button>
+                <button class="widget-card" data-view="fridge">
+                    <div class="widget-icon"><i class="fas fa-door-open"></i></div>
+                    <span class="widget-label">Mon frigo</span>
+                    <span class="widget-badge" id="badge-fridge">0</span>
+                </button>
+                <button class="widget-card" data-view="recipes">
+                    <div class="widget-icon"><i class="fas fa-utensils"></i></div>
+                    <span class="widget-label">Recettes</span>
+                </button>
+                <button class="widget-card" data-view="menu">
+                    <div class="widget-icon"><i class="fas fa-calendar-week"></i></div>
+                    <span class="widget-label">Menu semaine</span>
+                </button>
+                <button class="widget-card" data-view="seasonal">
+                    <div class="widget-icon"><i class="fas fa-leaf"></i></div>
+                    <span class="widget-label">De saison</span>
+                </button>
+                <button class="widget-card" data-view="shopping">
+                    <div class="widget-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <span class="widget-label">Courses</span>
+                    <span class="widget-badge" id="badge-shopping">0</span>
+                </button>
+                <button class="widget-card" data-view="stats">
+                    <div class="widget-icon"><i class="fas fa-chart-pie"></i></div>
+                    <span class="widget-label">Statistiques</span>
+                </button>
+                <button class="widget-card" data-view="settings">
+                    <div class="widget-icon"><i class="fas fa-cog"></i></div>
+                    <span class="widget-label">Réglages</span>
+                </button>
+            </div>
+
+            <!-- Résumé rapide -->
+            <div class="dashboard-summary" id="dashboard-summary">
+                <div class="summary-card warn" id="summary-expiring">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>0 produit(s) bientôt périmé(s)</span>
+                </div>
+                <div class="summary-card danger" id="summary-expired">
+                    <i class="fas fa-skull-crossbones"></i>
+                    <span>0 produit(s) périmé(s)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- SCANNER -->
+        <!-- ============================================================ -->
+        <section id="view-scanner" class="view">
+            <div class="scanner-container">
+                <div class="scanner-modes">
+                    <button class="tab-btn active" data-scanner-mode="camera">
+                        <i class="fas fa-camera"></i> Caméra
+                    </button>
+                    <button class="tab-btn" data-scanner-mode="manual">
+                        <i class="fas fa-keyboard"></i> Code manuel
+                    </button>
+                </div>
+
+                <div id="scanner-camera-mode">
+                    <div id="scanner-reader" class="scanner-reader"></div>
+                    <div class="scanner-controls">
+                        <select id="scanner-camera-select" class="form-select">
+                            <option value="">Sélectionner une caméra...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="scanner-manual-mode" class="hidden">
+                    <div class="form-group">
+                        <label for="manual-barcode">Code-barres</label>
+                        <input type="text" id="manual-barcode" class="form-input" placeholder="Entrez ou scannez le code-barres..." autofocus>
+                        <button id="btn-manual-scan" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search"></i> Rechercher
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Résultat du scan -->
+                <div id="scan-result" class="scan-result hidden">
+                    <div id="scan-product-info" class="product-card">
+                        <img id="scan-product-img" src="" alt="" class="product-img">
+                        <div class="product-details">
+                            <h3 id="scan-product-name"></h3>
+                            <p id="scan-product-brand" class="text-muted"></p>
+                            <p id="scan-product-category" class="badge"></p>
+                        </div>
+                    </div>
+                    <div class="scan-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Quantité</label>
+                                <div class="qty-control">
+                                    <button class="btn btn-sm" onclick="FrigoScan.Scanner.adjustQty(-1)">−</button>
+                                    <input type="number" id="scan-qty" class="form-input" value="1" min="0.1" step="0.5">
+                                    <button class="btn btn-sm" onclick="FrigoScan.Scanner.adjustQty(1)">+</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Unité</label>
+                                <select id="scan-unit" class="form-select">
+                                    <option value="unité">Unité</option>
+                                    <option value="kg">Kg</option>
+                                    <option value="g">g</option>
+                                    <option value="L">L</option>
+                                    <option value="mL">mL</option>
+                                    <option value="pièce">Pièce</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Date limite de consommation</label>
+                            <input type="date" id="scan-dlc" class="form-input">
+                        </div>
+                        <div class="scan-actions">
+                            <button id="btn-add-to-cart" class="btn btn-primary btn-lg">
+                                <i class="fas fa-cart-plus"></i> Ajouter au panier
+                            </button>
+                            <button id="btn-scan-next" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Scanner suivant
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panier temporaire -->
+                <div id="scan-cart" class="scan-cart hidden">
+                    <h3><i class="fas fa-shopping-basket"></i> Panier temporaire (<span id="cart-count">0</span>)</h3>
+                    <div id="cart-items" class="cart-items"></div>
+                    <div class="cart-actions">
+                        <button id="btn-transfer-fridge" class="btn btn-success btn-lg">
+                            <i class="fas fa-check"></i> Transférer au frigo
+                        </button>
+                        <button id="btn-clear-cart" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Vider le panier
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Message d'erreur scan -->
+                <div id="scan-error" class="alert alert-danger hidden"></div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- AJOUT MANUEL -->
+        <!-- ============================================================ -->
+        <section id="view-manual-add" class="view">
+            <div class="manual-container">
+                <!-- Catégories -->
+                <div class="category-grid" id="category-grid">
+                    <button class="category-btn" data-cat="fruits"><i class="fas fa-apple-alt"></i> Fruits</button>
+                    <button class="category-btn" data-cat="légumes"><i class="fas fa-carrot"></i> Légumes</button>
+                    <button class="category-btn" data-cat="viandes"><i class="fas fa-drumstick-bite"></i> Viandes</button>
+                    <button class="category-btn" data-cat="poissons"><i class="fas fa-fish"></i> Poissons</button>
+                    <button class="category-btn" data-cat="produits laitiers"><i class="fas fa-cheese"></i> Laitiers</button>
+                    <button class="category-btn" data-cat="boulangerie"><i class="fas fa-bread-slice"></i> Boulangerie</button>
+                    <button class="category-btn" data-cat="boissons"><i class="fas fa-wine-bottle"></i> Boissons</button>
+                    <button class="category-btn" data-cat="féculents"><i class="fas fa-wheat-awn"></i> Féculents</button>
+                    <button class="category-btn" data-cat="conserves"><i class="fas fa-jar"></i> Conserves</button>
+                    <button class="category-btn" data-cat="surgelés"><i class="fas fa-snowflake"></i> Surgelés</button>
+                    <button class="category-btn" data-cat="condiments"><i class="fas fa-pepper-hot"></i> Condiments</button>
+                    <button class="category-btn" data-cat="snacks"><i class="fas fa-cookie-bite"></i> Snacks</button>
+                    <button class="category-btn" data-cat="oeufs"><i class="fas fa-egg"></i> Oeufs</button>
+                    <button class="category-btn" data-cat="charcuterie"><i class="fas fa-bacon"></i> Charcuterie</button>
+                    <button class="category-btn" data-cat="autre"><i class="fas fa-box"></i> Autre</button>
+                </div>
+
+                <!-- Grille d'aliments pour la catégorie sélectionnée -->
+                <div id="food-grid-container" class="hidden">
+                    <button id="btn-back-categories" class="btn btn-secondary mb-2">
+                        <i class="fas fa-arrow-left"></i> Retour aux catégories
+                    </button>
+                    <h3 id="selected-category-title"></h3>
+                    <div id="food-grid" class="food-grid"></div>
+
+                    <!-- Ajout libre -->
+                    <div class="custom-add-form">
+                        <h4>Produit non listé ?</h4>
+                        <div class="form-row">
+                            <input type="text" id="custom-food-name" class="form-input" placeholder="Nom du produit...">
+                            <button id="btn-add-custom-food" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire détail -->
+                <div id="manual-detail-form" class="hidden">
+                    <div class="product-card-edit">
+                        <h3 id="manual-product-name"></h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Quantité</label>
+                                <div class="qty-presets">
+                                    <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setQty(1)">1</button>
+                                    <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setQty(2)">2</button>
+                                    <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setQty(3)">3</button>
+                                    <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setQty(6)">6</button>
+                                </div>
+                                <div class="qty-control">
+                                    <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.adjustQty(-1)">−</button>
+                                    <input type="number" id="manual-qty" class="form-input" value="1" min="0.1" step="0.5">
+                                    <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.adjustQty(1)">+</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Unité</label>
+                                <select id="manual-unit" class="form-select">
+                                    <option value="unité">Unité</option>
+                                    <option value="kg">Kg</option>
+                                    <option value="g">g</option>
+                                    <option value="L">L</option>
+                                    <option value="mL">mL</option>
+                                    <option value="pièce">Pièce</option>
+                                    <option value="botte">Botte</option>
+                                    <option value="barquette">Barquette</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Date limite de consommation (estimée)</label>
+                            <input type="date" id="manual-dlc" class="form-input">
+                        </div>
+                        <div class="form-actions">
+                            <button id="btn-manual-add-confirm" class="btn btn-success btn-lg">
+                                <i class="fas fa-check"></i> Ajouter au frigo
+                            </button>
+                            <button id="btn-manual-cancel" class="btn btn-secondary">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MON FRIGO -->
+        <!-- ============================================================ -->
+        <section id="view-fridge" class="view">
+            <div class="fridge-controls">
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-filter="all">Tout</button>
+                    <button class="tab-btn" data-filter="soon"><i class="fas fa-clock"></i> Bientôt périmé</button>
+                    <button class="tab-btn" data-filter="expired"><i class="fas fa-exclamation-circle"></i> Périmé</button>
+                </div>
+                <div class="sort-control">
+                    <select id="fridge-sort" class="form-select">
+                        <option value="added_at">Date d'ajout</option>
+                        <option value="dlc">DLC</option>
+                        <option value="name">Nom</option>
+                        <option value="category">Catégorie</option>
+                    </select>
+                </div>
+            </div>
+            <div id="fridge-list" class="fridge-list"></div>
+            <div id="fridge-empty" class="empty-state hidden">
+                <i class="fas fa-box-open"></i>
+                <p>Votre frigo est vide. Commencez par scanner ou ajouter des produits !</p>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- RECETTES -->
+        <!-- ============================================================ -->
+        <section id="view-recipes" class="view">
+            <div class="recipes-header">
+                <div class="search-bar">
+                    <input type="text" id="recipe-search" class="form-input" placeholder="Rechercher une recette...">
+                    <button id="btn-recipe-search" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <button id="btn-recipe-suggest" class="btn btn-success btn-lg">
+                    <i class="fas fa-magic"></i> Suggestions selon mon frigo
+                </button>
+            </div>
+            <div id="recipes-list" class="recipes-grid"></div>
+            <div id="recipes-empty" class="empty-state hidden">
+                <i class="fas fa-book-open"></i>
+                <p>Aucune recette trouvée. Essayez une recherche ou demandez des suggestions !</p>
+            </div>
+
+            <!-- Détail recette (modal) -->
+            <div id="recipe-detail-modal" class="modal hidden">
+                <div class="modal-content modal-lg">
+                    <button class="modal-close" onclick="FrigoScan.Recipes.closeDetail()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div id="recipe-detail-content"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- MENU DE LA SEMAINE -->
+        <!-- ============================================================ -->
+        <section id="view-menu" class="view">
+            <div class="menu-header">
+                <button id="btn-menu-prev" class="btn btn-sm"><i class="fas fa-chevron-left"></i></button>
+                <h3 id="menu-week-label">Semaine du --</h3>
+                <button id="btn-menu-next" class="btn btn-sm"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <button id="btn-generate-menu" class="btn btn-success btn-lg mb-2">
+                <i class="fas fa-magic"></i> Générer automatiquement
+            </button>
+            <div id="menu-grid" class="menu-grid"></div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- PRODUITS DE SAISON -->
+        <!-- ============================================================ -->
+        <section id="view-seasonal" class="view">
+            <h3 id="seasonal-title">Produits de saison — <span id="seasonal-month"></span></h3>
+            <div class="seasonal-nav">
+                <button id="btn-season-prev" class="btn btn-sm"><i class="fas fa-chevron-left"></i></button>
+                <button id="btn-season-next" class="btn btn-sm"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="seasonal-grid" class="seasonal-grid"></div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- LISTE DE COURSES -->
+        <!-- ============================================================ -->
+        <section id="view-shopping" class="view">
+            <div class="shopping-header">
+                <div class="form-row">
+                    <input type="text" id="shopping-add-input" class="form-input" placeholder="Ajouter un article...">
+                    <button id="btn-shopping-add" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="shopping-actions">
+                    <button id="btn-shopping-check-stocks" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-warehouse"></i> Vérifier stocks
+                    </button>
+                    <button id="btn-shopping-clear-done" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-broom"></i> Supprimer achetés
+                    </button>
+                </div>
+            </div>
+            <div id="shopping-list" class="shopping-list"></div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- STATISTIQUES -->
+        <!-- ============================================================ -->
+        <section id="view-stats" class="view">
+            <div class="stats-period">
+                <select id="stats-period-select" class="form-select">
+                    <option value="7">7 derniers jours</option>
+                    <option value="30" selected>30 derniers jours</option>
+                    <option value="90">3 mois</option>
+                    <option value="365">1 an</option>
+                </select>
+            </div>
+            <div id="stats-content" class="stats-grid"></div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- RÉGLAGES -->
+        <!-- ============================================================ -->
+        <section id="view-settings" class="view">
+            <div class="settings-groups">
+                <!-- Profil alimentaire -->
+                <div class="settings-group">
+                    <h3><i class="fas fa-user-md"></i> Profil alimentaire</h3>
+                    <div class="form-group">
+                        <label>Régimes alimentaires</label>
+                        <div class="checkbox-group" id="settings-diets">
+                            <label class="checkbox-label"><input type="checkbox" value="végétarien"> Végétarien</label>
+                            <label class="checkbox-label"><input type="checkbox" value="végan"> Végan</label>
+                            <label class="checkbox-label"><input type="checkbox" value="sans_gluten"> Sans gluten</label>
+                            <label class="checkbox-label"><input type="checkbox" value="sans_lactose"> Sans lactose</label>
+                            <label class="checkbox-label"><input type="checkbox" value="halal"> Halal</label>
+                            <label class="checkbox-label"><input type="checkbox" value="casher"> Casher</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Allergènes</label>
+                        <div class="checkbox-group" id="settings-allergens">
+                            <label class="checkbox-label"><input type="checkbox" value="gluten"> Gluten</label>
+                            <label class="checkbox-label"><input type="checkbox" value="lactose"> Lactose</label>
+                            <label class="checkbox-label"><input type="checkbox" value="arachides"> Arachides</label>
+                            <label class="checkbox-label"><input type="checkbox" value="fruits_a_coque"> Fruits à coque</label>
+                            <label class="checkbox-label"><input type="checkbox" value="oeufs"> Oeufs</label>
+                            <label class="checkbox-label"><input type="checkbox" value="poisson"> Poisson</label>
+                            <label class="checkbox-label"><input type="checkbox" value="crustaces"> Crustacés</label>
+                            <label class="checkbox-label"><input type="checkbox" value="soja"> Soja</label>
+                            <label class="checkbox-label"><input type="checkbox" value="celeri"> Céleri</label>
+                            <label class="checkbox-label"><input type="checkbox" value="moutarde"> Moutarde</label>
+                            <label class="checkbox-label"><input type="checkbox" value="sesame"> Sésame</label>
+                            <label class="checkbox-label"><input type="checkbox" value="sulfites"> Sulfites</label>
+                            <label class="checkbox-label"><input type="checkbox" value="lupin"> Lupin</label>
+                            <label class="checkbox-label"><input type="checkbox" value="mollusques"> Mollusques</label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre de personnes</label>
+                            <input type="number" id="settings-nb-persons" class="form-input" value="4" min="1" max="20">
+                        </div>
+                        <div class="form-group">
+                            <label>Fréquence des courses (jours)</label>
+                            <input type="number" id="settings-shopping-freq" class="form-input" value="7" min="1" max="60">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recettes -->
+                <div class="settings-group">
+                    <h3><i class="fas fa-utensils"></i> Recettes</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="settings-prefer-dlc" checked> Privilégier les produits à DLC courte
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="settings-prefer-seasonal"> Privilégier les produits de saison
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Mode menu semaine</label>
+                        <select id="settings-menu-mode" class="form-select">
+                            <option value="before_shopping">Avant les courses (génère une liste d'achats)</option>
+                            <option value="after_shopping">Après les courses (adapté au frigo)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Scanner -->
+                <div class="settings-group">
+                    <h3><i class="fas fa-camera"></i> Scanner</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Intervalle de scan (sec)</label>
+                            <input type="range" id="settings-scan-interval" class="form-range" min="1" max="5" value="2">
+                            <span id="scan-interval-label">2s</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Volume du bip</label>
+                            <input type="range" id="settings-beep-volume" class="form-range" min="0" max="1" step="0.1" value="0.5">
+                        </div>
+                    </div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="settings-scan-beep" checked> Bip sonore au scan
+                    </label>
+                    <div class="form-group">
+                        <label>Caméra par défaut</label>
+                        <select id="settings-default-camera" class="form-select">
+                            <option value="">Automatique</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Résolution webcam</label>
+                        <select id="settings-webcam-resolution" class="form-select">
+                            <option value="640x480">640×480</option>
+                            <option value="1280x720" selected>1280×720 (HD)</option>
+                            <option value="1920x1080">1920×1080 (Full HD)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Données -->
+                <div class="settings-group">
+                    <h3><i class="fas fa-database"></i> Données</h3>
+                    <div class="form-actions-row">
+                        <button class="btn btn-primary" onclick="FrigoScan.Settings.exportAll()">
+                            <i class="fas fa-download"></i> Exporter tout (JSON)
+                        </button>
+                        <label class="btn btn-secondary" for="import-file">
+                            <i class="fas fa-upload"></i> Importer (JSON)
+                        </label>
+                        <input type="file" id="import-file" class="hidden" accept=".json" onchange="FrigoScan.Settings.importData(this)">
+                        <button class="btn btn-secondary" onclick="FrigoScan.Settings.exportFridgeCSV()">
+                            <i class="fas fa-file-csv"></i> Exporter frigo (CSV)
+                        </button>
+                        <button class="btn btn-secondary" onclick="FrigoScan.Settings.backupDB()">
+                            <i class="fas fa-save"></i> Sauvegarder BDD
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Zone dangereuse -->
+                <div class="settings-group danger-zone">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h3>
+                    <button class="btn btn-danger" id="btn-clear-fridge">
+                        <i class="fas fa-trash"></i> Vider le frigo
+                    </button>
+                    <button class="btn btn-danger" id="btn-reset-db">
+                        <i class="fas fa-bomb"></i> Réinitialiser l'application
+                    </button>
+                </div>
+
+                <!-- Save button -->
+                <button id="btn-save-settings" class="btn btn-success btn-lg btn-full">
+                    <i class="fas fa-save"></i> Enregistrer les réglages
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- ================================================================== -->
+    <!-- TOAST NOTIFICATIONS -->
+    <!-- ================================================================== -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ================================================================== -->
+    <!-- MODAL CONFIRMATION -->
+    <!-- ================================================================== -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="confirm-title">Confirmation</h3>
+            <p id="confirm-message"></p>
+            <div class="modal-actions">
+                <button id="confirm-yes" class="btn btn-danger">Confirmer</button>
+                <button id="confirm-no" class="btn btn-secondary">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- SCRIPTS -->
+    <!-- ================================================================== -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/scanner.js"></script>
+    <script src="/static/js/manual-add.js"></script>
+    <script src="/static/js/fridge.js"></script>
+    <script src="/static/js/recipes.js"></script>
+    <script src="/static/js/menus.js"></script>
+    <script src="/static/js/seasonal.js"></script>
+    <script src="/static/js/shopping.js"></script>
+    <script src="/static/js/stats.js"></script>
+    <script src="/static/js/settings.js"></script>
+</body>
+</html>
