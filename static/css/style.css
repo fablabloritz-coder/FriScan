@@ -1024,6 +1024,33 @@ a { color: var(--primary); text-decoration: none; }
 /* ------------------------------------------------------------------ */
 /* Personnalisation d'icônes                                          */
 /* ------------------------------------------------------------------ */
+.icon-edit-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+.icon-tab-btn {
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-input);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.icon-tab-btn:hover {
+    border-color: var(--primary);
+    background: var(--primary-hover);
+    color: #fff;
+}
+.icon-tab-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 600;
+}
 .icon-edit-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

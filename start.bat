@@ -5,10 +5,13 @@ color 0A
 
 echo.
 echo  ╔═══════════════════════════════════════╗
-echo  ║        🧊 FrigoScan v1.0 🧊          ║
+echo  ║        🧊 FrigoScan v2.1 🧊          ║
 echo  ║   Gestionnaire de frigo intelligent   ║
 echo  ╚═══════════════════════════════════════╝
 echo.
+
+REM --- Se placer dans le dossier du script ---
+cd /d "%~dp0"
 
 REM --- Vérifier et tuer le processus sur le port 8000 ---
 echo [1/4] Vérification du port 8000...
@@ -22,7 +25,6 @@ echo.
 
 REM --- Environnement Python ---
 echo [2/4] Configuration de l'environnement Python...
-cd /d "%~dp0"
 
 REM Vérifier si Python est disponible
 python --version >nul 2>&1
@@ -36,7 +38,7 @@ if errorlevel 1 (
 )
 
 REM Créer l'environnement virtuel si nécessaire
-if not exist "venv" (
+if not exist "venv\Scripts\python.exe" (
     echo       Création de l'environnement virtuel...
     python -m venv venv
     if errorlevel 1 (
@@ -45,20 +47,20 @@ if not exist "venv" (
         exit /b 1
     )
 )
-
-REM Activer l'environnement virtuel
-call venv\Scripts\activate.bat
-echo       Environnement virtuel activé.
+echo       Environnement virtuel OK.
 echo.
 
 REM --- Installation des dépendances ---
 echo [3/4] Vérification des dépendances...
-pip install -r requirements.txt --quiet --disable-pip-version-check 2>nul
+REM Utiliser explicitement le pip du venv pour éviter l'installation user
+venv\Scripts\python.exe -m pip install -r requirements.txt --quiet --disable-pip-version-check 2>nul
 if errorlevel 1 (
     echo       Installation complète des dépendances...
-    pip install -r requirements.txt --disable-pip-version-check
+    venv\Scripts\python.exe -m pip install -r requirements.txt --disable-pip-version-check
     if errorlevel 1 (
         echo  ❌ Erreur lors de l'installation des dépendances
+        echo     Si l'erreur concerne pydantic-core / Rust, mettez à jour pip :
+        echo     venv\Scripts\python.exe -m pip install --upgrade pip
         pause
         exit /b 1
     )
@@ -85,8 +87,8 @@ echo.
 REM Ouvrir le navigateur après un délai
 start "" cmd /c "timeout /t 3 /nobreak >nul && start http://localhost:8000"
 
-REM Lancer uvicorn
-python -m uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
+REM Lancer uvicorn via le python du venv
+venv\Scripts\python.exe -m uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
 
 echo.
 echo  FrigoScan arrêté.

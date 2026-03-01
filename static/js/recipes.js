@@ -27,14 +27,23 @@
         }
     }
 
+    let isSuggesting = false;
     async function suggestRecipes() {
-        FrigoScan.toast('Recherche de suggestions en cours...', 'info');
-        const data = await FrigoScan.API.get('/api/recipes/suggest?max_results=12&min_score=10');
-        if (data.success) {
-            if (data.recipes.length === 0) {
-                FrigoScan.toast(data.message || 'Aucune suggestion trouvée.', 'warning');
+        if (isSuggesting) return;
+        isSuggesting = true;
+        const btn = document.getElementById('btn-recipe-suggest');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Recherche...'; }
+        try {
+            const data = await FrigoScan.API.get('/api/recipes/suggest?max_results=12&min_score=10');
+            if (data.success) {
+                if (data.recipes.length === 0) {
+                    FrigoScan.toast(data.message || 'Aucune suggestion trouvée.', 'warning');
+                }
+                renderRecipes(data.recipes || []);
             }
-            renderRecipes(data.recipes || []);
+        } finally {
+            isSuggesting = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-lightbulb"></i> Suggestions du frigo'; }
         }
     }
 
@@ -185,7 +194,7 @@
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const name = btn.dataset.name;
-                const res = await FrigoScan.API.post('/api/shopping/', { name, quantity: 1, unit: 'unité', checked: false });
+                const res = await FrigoScan.API.post('/api/shopping/', { product_name: name, quantity: 1, unit: 'unité' });
                 if (res.success) {
                     FrigoScan.toast(`"${name}" ajouté à la liste de courses`, 'success');
                     btn.parentElement.classList.remove('missing');
@@ -201,7 +210,7 @@
             addAllBtn.addEventListener('click', async () => {
                 let added = 0;
                 for (const name of recipe.missing_ingredients) {
-                    const res = await FrigoScan.API.post('/api/shopping/', { name, quantity: 1, unit: 'unité', checked: false });
+                    const res = await FrigoScan.API.post('/api/shopping/', { product_name: name, quantity: 1, unit: 'unité' });
                     if (res.success) added++;
                 }
                 FrigoScan.toast(`${added} ingrédient(s) ajouté(s) à la liste de courses`, 'success');

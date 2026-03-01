@@ -61,6 +61,9 @@
         const allergens = [];
         document.querySelectorAll('#settings-allergens input:checked').forEach(cb => allergens.push(cb.value));
 
+        // Sauvegarder aussi les exclusions custom
+        saveCustomDietExclusions();
+
         const settings = [
             { key: 'diets', value: JSON.stringify(diets) },
             { key: 'allergens', value: JSON.stringify(allergens) },
@@ -89,9 +92,23 @@
             settings.push({ key: 'custom_exclusions', value: JSON.stringify(exclusions) });
         }
 
+        // Visuel : bouton en mode chargement
+        const saveBtn = document.getElementById('btn-save-settings');
+        const originalHTML = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+
         const data = await FrigoScan.API.put('/api/settings/bulk', { settings });
         if (data.success) {
-            FrigoScan.toast('Réglages enregistrés !', 'success');
+            // Animation de succès sur le bouton
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Réglages enregistrés !';
+            saveBtn.classList.remove('btn-success');
+            saveBtn.classList.add('btn-saved');
+            saveBtn.style.background = '#16a34a';
+            saveBtn.style.color = '#fff';
+            saveBtn.style.transform = 'scale(1.03)';
+
+            FrigoScan.toast('Réglages enregistrés avec succès !', 'success');
 
             // Sauvegarder en local pour le mode offline
             const settingsObj = {};
@@ -100,6 +117,27 @@
             });
             localStorage.setItem('frigoscan-settings', JSON.stringify(settingsObj));
             localStorage.setItem('frigoscan-nb-persons', document.getElementById('settings-nb-persons').value);
+
+            // Restaurer le bouton après 2s
+            setTimeout(() => {
+                saveBtn.innerHTML = originalHTML;
+                saveBtn.classList.remove('btn-saved');
+                saveBtn.classList.add('btn-success');
+                saveBtn.style.background = '';
+                saveBtn.style.color = '';
+                saveBtn.style.transform = '';
+                saveBtn.disabled = false;
+            }, 2500);
+        } else {
+            saveBtn.innerHTML = '<i class="fas fa-times"></i> Erreur !';
+            saveBtn.style.background = '#dc2626';
+            saveBtn.style.color = '#fff';
+            setTimeout(() => {
+                saveBtn.innerHTML = originalHTML;
+                saveBtn.style.background = '';
+                saveBtn.style.color = '';
+                saveBtn.disabled = false;
+            }, 2000);
         }
     }
 
@@ -216,8 +254,8 @@
 
     Settings.resetCustomIcons = function () {
         localStorage.removeItem('frigoscan-custom-icons');
-        const select = document.getElementById('icon-edit-category');
-        if (select && select.value) Settings.loadIconCategory(select.value);
+        const activeTab = document.querySelector('#icon-edit-tabs .icon-tab-btn.active');
+        if (activeTab) Settings.loadIconCategory(activeTab.dataset.cat);
         FrigoScan.toast('Icônes réinitialisées.', 'success');
     };
 
@@ -257,23 +295,41 @@
         }
     }
 
-    // Initialiser le sélecteur de catégorie des icônes
+    // Initialiser l'éditeur d'icônes avec onglets catégories cliquables
     function initIconEditor() {
-        const select = document.getElementById('icon-edit-category');
-        if (!select) return;
+        const tabsContainer = document.getElementById('icon-edit-tabs');
+        if (!tabsContainer) return;
 
         const FOOD_DB = FrigoScan.ManualAdd && FrigoScan.ManualAdd.FOOD_DB ? FrigoScan.ManualAdd.FOOD_DB : {};
         const cats = Object.keys(FOOD_DB);
-        select.innerHTML = '<option value="">— Choisir une catégorie —</option>' +
-            cats.map(c => `<option value="${c}">${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('');
-    }
 
-    // Patch saveSettings pour inclure les exclusions custom
-    const originalSaveSettings = saveSettings;
-    saveSettings = async function () {
-        saveCustomDietExclusions();
-        await originalSaveSettings();
-    };
+        const CATEGORY_EMOJIS = {
+            'fruits': '🍎', 'légumes': '🥕', 'viandes': '🥩', 'poissons': '🐟',
+            'produits laitiers': '🧀', 'boulangerie': '🍞', 'boissons': '🍷',
+            'féculents': '🌾', 'conserves': '🥫', 'surgelés': '❄️',
+            'condiments': '🌶️', 'snacks': '🍪', 'oeufs': '🥚',
+            'charcuterie': '🥓', 'autre': '📦'
+        };
+
+        tabsContainer.innerHTML = cats.map(c =>
+            `<button class="icon-tab-btn btn btn-sm" data-cat="${c}" style="margin:3px;">
+                ${CATEGORY_EMOJIS[c] || '📦'} ${c.charAt(0).toUpperCase() + c.slice(1)}
+            </button>`
+        ).join('');
+
+        tabsContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.icon-tab-btn');
+            if (!btn) return;
+            const cat = btn.dataset.cat;
+
+            // Toggle actif
+            tabsContainer.querySelectorAll('.icon-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            Settings.loadIconCategory(cat);
+            document.getElementById('icon-edit-actions').classList.remove('hidden');
+        });
+    }
 
     // Init au chargement
     document.addEventListener('DOMContentLoaded', () => {

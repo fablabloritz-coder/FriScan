@@ -37,6 +37,11 @@
         setupManualScan();
         setupCartButtons();
         listCameras();
+        // Auto-démarrer la caméra si on est en mode caméra
+        const cameraMode = document.getElementById('scanner-camera-mode');
+        if (cameraMode && !cameraMode.classList.contains('hidden')) {
+            setTimeout(() => startCamera(), 300);
+        }
     };
 
     function setupModeTabs() {
@@ -128,12 +133,22 @@
         };
 
         try {
-            if (cameraId) {
-                await html5QrCode.start(cameraId, config, onScanSuccess, onScanFailure);
-            } else {
-                await html5QrCode.start({ facingMode: 'environment' }, config, onScanSuccess, onScanFailure);
-            }
+            const cameraConstraints = cameraId
+                ? cameraId
+                : { facingMode: 'environment', advanced: [{ focusMode: 'continuous' }] };
+            await html5QrCode.start(cameraConstraints, config, onScanSuccess, onScanFailure);
             isScanning = true;
+
+            // Forcer le focus continu si possible (utile quand on passe un cameraId)
+            try {
+                const videoElem = document.querySelector('#scanner-reader video');
+                if (videoElem && videoElem.srcObject) {
+                    const track = videoElem.srcObject.getVideoTracks()[0];
+                    if (track && track.applyConstraints) {
+                        await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                    }
+                }
+            } catch (focusErr) { /* Focus continu non supporté par cette caméra */ }
         } catch (e) {
             console.error('Erreur démarrage caméra:', e);
             FrigoScan.toast('Impossible de démarrer la caméra. Vérifiez les permissions.', 'error');

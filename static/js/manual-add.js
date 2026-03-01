@@ -320,7 +320,7 @@
         overlay.id = 'add-food-overlay';
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
-            <div class="card" style="max-width:380px;margin:auto;margin-top:20vh;padding:24px;">
+            <div class="card" style="max-width:380px;margin:auto;margin-top:20vh;padding:24px;background:var(--bg-card);border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.25);border-radius:16px;">
                 <h3 style="margin-bottom:16px;">➕ Nouvel aliment dans "${category}"</h3>
                 <div class="form-group">
                     <label class="form-label">Nom</label>
@@ -375,6 +375,18 @@
 
     ManualAdd.setQty = function (val) {
         document.getElementById('manual-qty').value = val;
+    };
+
+    ManualAdd.setWeight = function (val, unit) {
+        document.getElementById('manual-qty').value = val;
+        const unitSelect = document.getElementById('manual-unit');
+        // Mapper cL → mL si nécessaire
+        if (unit === 'cL') {
+            unitSelect.value = 'mL';
+            document.getElementById('manual-qty').value = val * 10;
+        } else {
+            unitSelect.value = unit;
+        }
     };
 
     ManualAdd.adjustQty = function (delta) {

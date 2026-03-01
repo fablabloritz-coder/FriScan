@@ -294,6 +294,24 @@
                                 </select>
                             </div>
                         </div>
+                        <!-- Poids prédéfinis -->
+                        <div class="form-group">
+                            <label>Poids rapide</label>
+                            <div class="weight-presets">
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(50,'g')">50g</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(100,'g')">100g</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(250,'g')">250g</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(500,'g')">500g</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(1,'kg')">1kg</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(2,'kg')">2kg</button>
+                            </div>
+                            <div class="weight-presets" style="margin-top:4px;">
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(33,'cL')">33cL</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(50,'cL')">50cL</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(1,'L')">1L</button>
+                                <button class="btn btn-sm" onclick="FrigoScan.ManualAdd.setWeight(1.5,'L')">1.5L</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Date limite de consommation (estimée)</label>
                             <div class="dlc-input-row">
@@ -569,18 +587,17 @@
                 <!-- Personnalisation icônes ajout manuel -->
                 <div class="settings-group">
                     <h3><i class="fas fa-palette"></i> Icônes ajout manuel</h3>
-                    <p class="text-muted" style="margin-bottom:12px;">Personnalisez les emojis de chaque aliment dans l'ajout manuel.</p>
-                    <div class="form-group">
-                        <label>Catégorie</label>
-                        <select id="icon-edit-category" class="form-select" onchange="FrigoScan.Settings.loadIconCategory(this.value)"></select>
-                    </div>
+                    <p class="text-muted" style="margin-bottom:12px;">Cliquez sur une catégorie pour modifier les emojis de chaque aliment.</p>
+                    <div id="icon-edit-tabs" class="icon-edit-tabs"></div>
                     <div id="icon-edit-grid" class="icon-edit-grid"></div>
-                    <button class="btn btn-primary" onclick="FrigoScan.Settings.saveCustomIcons()" style="margin-top:8px;">
-                        <i class="fas fa-save"></i> Enregistrer les icônes
-                    </button>
-                    <button class="btn btn-secondary" onclick="FrigoScan.Settings.resetCustomIcons()" style="margin-top:8px;margin-left:8px;">
-                        <i class="fas fa-undo"></i> Réinitialiser
-                    </button>
+                    <div id="icon-edit-actions" class="hidden" style="margin-top:8px;">
+                        <button class="btn btn-primary" onclick="FrigoScan.Settings.saveCustomIcons()">
+                            <i class="fas fa-save"></i> Enregistrer les icônes
+                        </button>
+                        <button class="btn btn-secondary" onclick="FrigoScan.Settings.resetCustomIcons()" style="margin-left:8px;">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Données -->
