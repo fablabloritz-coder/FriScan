@@ -1290,7 +1290,12 @@ def compute_match_score(recipe_ingredients_json: str, fridge_items: list[dict]) 
     """
     Calcule le score de correspondance entre une recette et le contenu du frigo.
     Retourne (score 0-100, liste des ingrédients manquants).
+    
+    Utilise une logique de matching améliorée pour éviter les faux positifs
+    tout en gérant les variantes (pluriel, adjectifs, etc.).
     """
+    import re
+    
     try:
         ingredients = json.loads(recipe_ingredients_json)
     except Exception:
@@ -1299,29 +1304,81 @@ def compute_match_score(recipe_ingredients_json: str, fridge_items: list[dict]) 
     if not ingredients:
         return (0.0, [])
 
-    fridge_names = set()
+    fridge_items_lower = []
     for item in fridge_items:
         name = (item.get("name") or "").lower().strip()
-        fridge_names.add(name)
-        # Ajout de variantes sans accents simplifié
-        for word in name.split():
-            fridge_names.add(word)
+        fridge_items_lower.append(name)
+
+    def _normalize_word(word: str) -> str:
+        """Normalise un mot (enlève adjectifs, gère pluriel)."""
+        import re
+        
+        # Adjectifs / épithètes culinaires français courants à enlever
+        culinary_adjectives = [
+            'frais', 'fraîche', 'fraîches', 'séché', 'séchée', 'séchés', 'séchées',
+            'entier', 'entière', 'entiers', 'entières', 'moulu', 'moulue', 'moulus', 'moulues',
+            'haché', 'hachée', 'hachés', 'hachées', 'tranché', 'tranchée', 'tranchés', 'tranchées',
+            'concassé', 'concassée', 'concassés', 'concassées',  # pour tomates concassées
+            'rôti', 'rôtie', 'grillé', 'grillée', 'cuit', 'cuite',
+            'gros', 'petit', 'petite', 'épais', 'épaisse',
+            'blanc', 'blanche', 'noir', 'noire', 'rouge', 'jaune', 'vert', 'verte',
+        ]
+        
+        cleaned = word
+        # Enlever les adjectifs courants
+        for adj in culinary_adjectives:
+            cleaned = re.sub(rf'\b{adj}(e|s|es)?\b', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Gérer le pluriel: enlever 's' final si c'est un pluriel
+        if cleaned.endswith('s') and len(cleaned) > 2 and not cleaned.endswith(('ss', 'us', 'is')):
+            # Vérifier que ce n'est pas un mot qui se termine naturellement en 's'
+            singular = cleaned[:-1]
+            # Accepter les variantes singulier/pluriel courantes
+            if singular.endswith(('e', 'l', 'r', 'n', 't')):
+                return singular
+        
+        return cleaned
+
+
+    def _match_ingredient(ing_name: str, fridge_list: list) -> bool:
+        """Teste si un ingrédient correspond à quelque chose du frigo."""
+        ing_clean = _normalize_word(ing_name)
+        
+        # Test 1 : correspondance directe après nettoyage
+        for fridge_item in fridge_list:
+            fridge_clean = _normalize_word(fridge_item)
+            if ing_clean == fridge_clean:
+                return True
+            
+            # Test 2 : un des mots de frigo est dans l'ingrédient de recette
+            # Mais comme mot entier (pour éviter "ail" dans "détail")
+            for fridge_word in fridge_clean.split():
+                if len(fridge_word) > 2:
+                    # Chercher le mot complet comme mot entier
+                    if re.search(rf'\b{re.escape(fridge_word)}\b', ing_clean, flags=re.IGNORECASE):
+                        return True
+            
+            # Test 3 : un des mots de recette est dans le frigo
+            for ing_word in ing_clean.split():
+                if len(ing_word) > 2:
+                    if re.search(rf'\b{re.escape(ing_word)}\b', fridge_clean, flags=re.IGNORECASE):
+                        return True
+        
+        return False
 
     matched = 0
     missing = []
     for ing in ingredients:
         ing_name = (ing.get("name") or "").lower().strip()
-        found = False
-        for fn in fridge_names:
-            if fn in ing_name or ing_name in fn:
-                found = True
-                break
-        if found:
+        
+        # Vérifier si ça correspond au frigo
+        if _match_ingredient(ing_name, fridge_items_lower):
             matched += 1
         else:
             # On ignore les ingrédients basiques (eau, sel, poivre, huile)
             basic = ["water", "salt", "pepper", "oil", "eau", "sel", "poivre", "huile"]
-            if any(b in ing_name for b in basic):
+            if any(re.search(rf'\b{b}\b', ing_name, flags=re.IGNORECASE) for b in basic):
                 matched += 1
             else:
                 missing.append(ing.get("name", ing_name))
@@ -1329,6 +1386,7 @@ def compute_match_score(recipe_ingredients_json: str, fridge_items: list[dict]) 
     total = len(ingredients)
     score = round((matched / total) * 100, 1) if total > 0 else 0
     return (score, missing)
+
 
 
 def _expand_custom_exclusions(custom_exclusions: list[str]) -> list[str]:
