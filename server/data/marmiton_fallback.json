@@ -188,5 +188,295 @@
     "ingredients": ["400g de haricots secs (trempés)", "400g de tomates", "1 oignon", "3 gousses d'ail", "1 c.à.c de cumin", "Huile d'olive", "Sel et poivre"],
     "steps": ["Faire revenir oignon et ail", "Ajouter les haricots", "Ajouter les tomates et cumin", "Cuire 25-30 minutes", "Assaisonner", "Servir chaud"],
     "tags": ["Haricots", "Végétarien", "Riche en protéines"]
+  },
+  {
+    "title": "Quiche aux Poireaux",
+    "difficulty": "moyen",
+    "prep_time": 20,
+    "cook_time": 35,
+    "servings": 6,
+    "ingredients": ["1 pâte brisée", "4 poireaux", "200ml de crème", "3 œufs", "100g d'emmental", "Sel et poivre"],
+    "steps": ["Émincer les poireaux", "Faire revenir les poireaux", "Disposer dans la pâte", "Mélanger œufs et crème", "Verser et parsemer du fromage", "Cuire 30-35 minutes"],
+    "tags": ["Quiche", "Poireaux", "Œufs"]
+  },
+  {
+    "title": "Pâtes Carbonara Allégée",
+    "difficulty": "moyen",
+    "prep_time": 10,
+    "cook_time": 12,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "200g de champignons", "4 œufs", "100g de fromage", "Persil", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Cuire les pâtes", "Préparer le mélange œufs-fromage", "Faire revenir les champignons", "Mélanger tout", "Servir immédiatement"],
+    "tags": ["Pâtes", "Œufs", "Rapide"]
+  },
+  {
+    "title": "Velouté de Courgettes",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 25,
+    "servings": 4,
+    "ingredients": ["6 courgettes", "1 oignon", "750ml de bouillon", "200ml de crème", "2 gousses d'ail", "Sel et poivre"],
+    "steps": ["Découper les courgettes", "Faire revenir oignon et ail", "Ajouter les courgettes et bouillon", "Cuire 20 minutes", "Mixer", "Ajouter crème", "Servir chaud"],
+    "tags": ["Soupe", "Velouté", "Courgettes"]
+  },
+  {
+    "title": "Tofu Sauté aux Légumes",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["400g de tofu", "200g de brocoli", "150g de poivrons", "100g de champignons", "3 gousses d'ail", "Sauce soja", "Huile", "Gingembre"],
+    "steps": ["Découper le tofu en cubes", "Émincer les légumes", "Faire revenir tofu et légumes", "Ajouter sauce soja et gingembre", "Cuire 12 minutes", "Servir"],
+    "tags": ["Tofu", "Asiatique", "Sain"]
+  },
+  {
+    "title": "Pâtes aux Quatre Fromages",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 12,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "100g de fromage blanc", "50g de gorgonzola", "50g d'emmental", "50g de ricotta", "Noix concassées", "Poivre"],
+    "steps": ["Cuire les pâtes", "Mélanger les fromages", "Réchauffer avec les pâtes", "Ajouter les noix", "Servir"],
+    "tags": ["Pâtes", "Fromage", "Riche"]
+  },
+  {
+    "title": "Riz Pilaf aux Légumes",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 25,
+    "servings": 4,
+    "ingredients": ["300g de riz basmati", "1 oignon", "2 carottes", "150g de pois", "750ml de bouillon", "Huile d'olive", "Épices"],
+    "steps": ["Faire revenir le riz et oignon", "Ajouter le bouillon", "Ajouter les légumes à mi-cuisson", "Cuire 18 minutes", "Laisser reposer", "Servir"],
+    "tags": ["Riz", "Pilaf", "Complet"]
+  },
+  {
+    "title": "Courges Rôties aux Herbes",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 35,
+    "servings": 4,
+    "ingredients": ["800g de courges", "Thym et romarin", "Huile d'olive", "4 gousses d'ail", "Sel et poivre"],
+    "steps": ["Découper la courge", "Mélanger avec huile et herbes", "Disposer sur plaque", "Rôtir 30-35 minutes", "Servir chaud"],
+    "tags": ["Courges", "Rôti", "Herbes"]
+  },
+  {
+    "title": "Pâtes aux Légumes d'Été",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 12,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "2 tomates", "1 courgette", "1 aubergine", "2 oignons", "Basil frais", "Huile d'olive"],
+    "steps": ["Cuire les pâtes", "Préparer les légumes", "Faire revenir légumes et herbes", "Mélanger avec pâtes", "Servir avec basil"],
+    "tags": ["Pâtes", "Été", "Légumes"]
+  },
+  {
+    "title": "Lentilles aux Épices",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["250g de lentilles", "1 oignon", "2 tomates", "1 c.à.c de curcuma", "1 c.à.c de cumin", "2 gousses d'ail", "Huile d'olive"],
+    "steps": ["Faire revenir oignon et ail", "Ajouter épices", "Ajouter lentilles et tomates", "Cuire 25-30 minutes", "Assaisonner", "Servir"],
+    "tags": ["Lentilles", "Épices", "Protéines"]
+  },
+  {
+    "title": "Pâtes Pesto Maison",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 10,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "150g de basilic frais", "50g de pignons", "50g de parmesan", "100ml d'huile d'olive", "2 gousses d'ail"],
+    "steps": ["Préparer le pesto au mixer", "Cuire les pâtes", "Ajouter l'eau de cuisson au pesto", "Mélanger pâtes et pesto", "Servir"],
+    "tags": ["Pâtes", "Pesto", "Frais"]
+  },
+  {
+    "title": "Soupe de Carottes et Gingembre",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 25,
+    "servings": 4,
+    "ingredients": ["8 carottes", "1L de bouillon", "1 oignon", "2 c.à.s de gingembre frais", "200ml de crème", "Sel et poivre"],
+    "steps": ["Émincer les légumes", "Faire revenir oignon et gingembre", "Ajouter carottes et bouillon", "Cuire 20 minutes", "Mixer", "Ajouter crème", "Servir"],
+    "tags": ["Soupe", "Carottes", "Gingembre"]
+  },
+  {
+    "title": "Riz aux Champignons",
+    "difficulty": "moyen",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["300g de riz arborio", "300g de champignons", "1 oignon", "750ml de bouillon", "100ml de vin blanc", "Persil"],
+    "steps": ["Faire revenir oignon et champignons", "Ajouter le riz", "Verser le vin et bouillon progressivement", "Cuire 15-18 minutes", "Parsemer de persil", "Servir"],
+    "tags": ["Riz", "Champignons", "Français"]
+  },
+  {
+    "title": "Falafel Maison",
+    "difficulty": "moyen",
+    "prep_time": 20,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["400g de pois chiches cuits", "1 oignon", "4 gousses d'ail", "Persil et coriandre", "1 c.à.c de cumin", "Huile arachide"],
+    "steps": ["Mixer les pois chiches avec épices", "Former des boules", "Faire frire dans l'huile", "Égoutter et servir avec sauce tahini"],
+    "tags": ["Falafel", "Moyen-Orient", "Protéines"]
+  },
+  {
+    "title": "Omelette Champignons Fromage",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 8,
+    "servings": 2,
+    "ingredients": ["4 œufs", "150g de champignons", "100g d'emmental", "1 oignon", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Faire revenir champignons et oignon", "Battre les œufs", "Cuire l'omelette", "Ajouter garniture et fromage", "Plier et servir"],
+    "tags": ["Œufs", "Champignons", "Petit-déjeuner"]
+  },
+  {
+    "title": "Couscous aux Légumes",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["300g de couscous", "400ml de bouillon", "2 carottes", "1 courgette", "150g de pois chiches", "Huile d'olive"],
+    "steps": ["Verser bouillon chaud sur couscous", "Laisser reposer 5 minutes", "Ajouter légumes revenus", "Aérer avec fourchette", "Servir"],
+    "tags": ["Couscous", "Légumes", "Rapide"]
+  },
+  {
+    "title": "Assiette Complète Tofu",
+    "difficulty": "moyen",
+    "prep_time": 20,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["400g de tofu fumé", "200g de riz", "200g de brocoli", "1 carotte", "1 c.à.s de sauce soja", "Gingembre", "Ail"],
+    "steps": ["Cuire le riz", "Stir-fry tofu et légumes avec épices", "Servir en assiette équilibrée"],
+    "tags": ["Tofu", "Équilibré", "Complet"]
+  },
+  {
+    "title": "Pâtes à la Crème de Champignons",
+    "difficulty": "moyen",
+    "prep_time": 10,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "400g de champignons", "200ml de crème", "2 gousses d'ail", "1 oignon", "Thym"],
+    "steps": ["Cuire les pâtes", "Faire revenir champignons et aromates", "Ajouter crème et thym", "Mélanger avec pâtes", "Servir"],
+    "tags": ["Pâtes", "Crème", "Français"]
+  },
+  {
+    "title": "Brocoli Amande Rôti",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["600g de brocoli", "100g d'amandes effilées", "4 gousses d'ail", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Tailler le brocoli", "Mélanger avec huile, ail et amandes", "Rôtir 18-20 minutes", "Servir"],
+    "tags": ["Brocoli", "Amande", "Sain"]
+  },
+  {
+    "title": "Lentilles Corail Rapides",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["250g de lentilles corail", "1 oignon", "2 tomates", "1L de bouillon", "Thym", "Huile d'olive"],
+    "steps": ["Faire revenir oignon", "Ajouter lentilles corail et bouillon", "Ajouter tomates et thym", "Cuire 12-15 minutes", "Servir"],
+    "tags": ["Lentilles", "Rapide", "Protéines"]
+  },
+  {
+    "title": "Omelette aux Épinards",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 8,
+    "servings": 2,
+    "ingredients": ["4 œufs", "200g d'épinards frais", "50g de fromage", "1 oignon", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Faire revenir épinards et oignon", "Battre les œufs", "Cuire l'omelette", "Garnir et servir"],
+    "tags": ["Œufs", "Épinards", "Nutritif"]
+  },
+  {
+    "title": "Pois Chiches Rôtis",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["400g de pois chiches cuits", "2 c.à.s d'huile d'olive", "1 c.à.c de paprika", "1 c.à.c de cumin", "Sel"],
+    "steps": ["Sécher les pois chiches", "Les mélanger avec épices", "Rôtir 25-30 minutes en remuant", "Laisser refroidir", "Servir"],
+    "tags": ["Pois Chiches", "Snack", "Protéines"]
+  },
+  {
+    "title": "Pâtes aux Tomates Cerises",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 12,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "400g de tomates cerises", "4 gousses d'ail", "Basil frais", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Cuire les pâtes", "Faire revenir ail et tomates", "Ajouter basil", "Mélanger avec pâtes", "Servir chaud"],
+    "tags": ["Pâtes", "Tomates", "Été"]
+  },
+  {
+    "title": "Riz Basmati Épicé",
+    "difficulty": "moyen",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["300g de riz basmati", "1 oignon", "600ml de bouillon", "1 bâton de cannelle", "5 clous de girofle", "2 feuilles de laurier"],
+    "steps": ["Faire revenir oignon et riz", "Ajouter épices et bouillon", "Cuire 15-18 minutes", "Laisser reposer", "Aérer et servir"],
+    "tags": ["Riz", "Épices", "Indien"]
+  },
+  {
+    "title": "Frittata aux Légumes",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 25,
+    "servings": 4,
+    "ingredients": ["8 œufs", "1 poivron", "1 courgette", "1 oignon", "150g de champignons", "Fromage", "Huile d'olive"],
+    "steps": ["Faire revenir légumes", "Verser œufs battus dessus", "Commencer à la poêle", "Finir au four 15 minutes", "Servir"],
+    "tags": ["Œufs", "Complet", "Espagnol"]
+  },
+  {
+    "title": "Velouté de Butternut",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["1kg de butternut", "1 oignon", "750ml de bouillon", "200ml de crème", "2 gousses d'ail", "Thym"],
+    "steps": ["Découper et rôtir la butternut", "Faire revenir oignon et ail", "Ajouter butternut et bouillon", "Cuire 20 minutes", "Mixer", "Ajouter crème", "Servir"],
+    "tags": ["Soupe", "Butternut", "Automne"]
+  },
+  {
+    "title": "Omelette Tomates Basil",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 8,
+    "servings": 2,
+    "ingredients": ["4 œufs", "2 tomates", "Basil frais", "Fromage parmesan", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Battre les œufs", "Faire chauffer l'huile", "Verser œufs et garnir", "Bien pliée", "Servir immédiatement"],
+    "tags": ["Œufs", "Tomates", "Italien"]
+  },
+  {
+    "title": "Pois Chiches Curry",
+    "difficulty": "moyen",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["400g de pois chiches", "400ml de lait de coco", "1 oignon", "2 c.à.s de curry", "3 gousses d'ail", "Gingembre", "Coriandre"],
+    "steps": ["Faire revenir oignon, ail et gingembre", "Ajouter curry et pois chiches", "Verser lait de coco", "Cuire 15 minutes", "Ajouter coriandre", "Servir"],
+    "tags": ["Pois Chiches", "Curry", "Indien"]
+  },
+  {
+    "title": "Pâtes Tomate Olive",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 12,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "400g de tomates", "150g d'olives noires", "4 gousses d'ail", "Capres", "Huile d'olive"],
+    "steps": ["Cuire les pâtes", "Faire sauce: tomates, olives, capres", "Ajouter ail et huile", "Mélanger", "Servir"],
+    "tags": ["Pâtes", "Méditerranéen", "Rapide"]
+  },
+  {
+    "title": "Carottes Miel Thym",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["800g de carottes", "2 c.à.s de miel", "Thym frais", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Tailler carottes", "Mélanger huile, miel et thym", "Rôtir 18-20 minutes", "Servir chaud"],
+    "tags": ["Carottes", "Miel", "Côté"]
   }
 ]

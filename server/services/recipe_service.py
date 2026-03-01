@@ -497,15 +497,60 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
     return recipes[:max_results]
 
 
+def _normalize_marmiton_to_recipe_format(recipe: dict) -> dict:
+    """Convertit une recette Marmiton au format interne."""
+    # Convertir liste d'ingrédients simples en format ingredients_json
+    ingredients = []
+    for ing in recipe.get("ingredients", []):
+        if isinstance(ing, str):
+            ingredients.append({"name": ing, "measure": ""})
+        else:
+            ingredients.append(ing)
+    
+    # Convertir steps en instructions
+    steps = recipe.get("steps", [])
+    instructions = "\n".join([f"{i+1}. {step}" for i, step in enumerate(steps)]) if steps else ""
+    
+    return {
+        "title": recipe.get("title", ""),
+        "ingredients_json": json.dumps(ingredients),
+        "instructions": instructions,
+        "prep_time": recipe.get("prep_time", 30),
+        "cook_time": recipe.get("cook_time", 30),
+        "servings": recipe.get("servings", 4),
+        "source_url": "",
+        "image_url": "",
+        "tags_json": json.dumps(recipe.get("tags", [])),
+        "diet_tags_json": json.dumps(["végétarien"]),  # Les recettes Marmiton sont toutes végétariennes
+    }
+
+
 def load_local_recipes() -> list[dict]:
-    """Charge les recettes locales de secours."""
+    """Charge les recettes locales de secours (local_recipes.json + marmiton_fallback.json)."""
+    recipes = []
+    
+    # Charger local_recipes.json
     if LOCAL_RECIPES_PATH.exists():
         try:
             with open(LOCAL_RECIPES_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return []
+                recipes.extend(json.load(f))
+        except Exception as e:
+            logger.warning(f"Erreur chargement local_recipes.json: {e}")
+    
+    # Charger marmiton_fallback.json
+    fallback_path = Path(__file__).parent.parent / "data" / "marmiton_fallback.json"
+    if fallback_path.exists():
+        try:
+            with open(fallback_path, "r", encoding="utf-8") as f:
+                marmiton_recipes = json.load(f)
+                # Convertir au format interne
+                for recipe in marmiton_recipes:
+                    recipes.append(_normalize_marmiton_to_recipe_format(recipe))
+                logger.info(f"Chargé {len(marmiton_recipes)} recettes Marmiton")
+        except Exception as e:
+            logger.warning(f"Erreur chargement marmiton_fallback.json: {e}")
+    
+    return recipes
 
 
 async def search_recipes_online(query: str) -> list[dict]:
