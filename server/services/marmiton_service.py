@@ -11,6 +11,7 @@ import logging
 import re
 from typing import Optional
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger("frigoscan.marmiton")
 
@@ -187,190 +188,39 @@ async def search_marmiton_recipes(query: str, limit: int = 12) -> list[dict]:
 
 def _get_fallback_recipes(query: str) -> list[dict]:
     """
-    Recettes de fallback Marmiton-style (JSON local).
-    À remplacer par une vraie intégration si une API REST est disponible.
+    Recettes de fallback Marmiton-style (chargées depuis JSON).
+    Retourne toutes les recettes ou filtrées selon la requête.
     """
     
-    fallback_recipes = [
-        {
-            "title": "Spaghetti Carbonara",
-            "difficulty": "facile",
-            "prep_time": 10,
-            "cook_time": 20,
-            "servings": 4,
-            "author": "Marmiton Community",
-            "url": "https://www.marmiton.org/recettes/recette_spaghetti-carbonara_52910.aspx",
-            "ingredients": [
-                "400g de spaghetti",
-                "200g de lardons",
-                "4 oeufs",
-                "100g de parmesan",
-                "Sel et poivre",
-            ],
-            "steps": [
-                "Cuire les spaghetti selon les indications du paquet.",
-                "Faire revenir les lardons dans une poêle.",
-                "Dans un saladier, battre les oeufs avec le parmesan.",
-                "Égoutter les pâtes et les mélanger avec les lardons.",
-                "Hors du feu, ajouter le mélange oeufs-fromage.",
-                "Mélanger bien et servir chaud.",
-            ],
-            "tags": ["Plat", "Pâtes", "Français", "Rapide"],
-            "image_url": "",
-        },
-        {
-            "title": "Salade Niçoise",
-            "difficulty": "facile",
-            "prep_time": 20,
-            "cook_time": 0,
-            "servings": 4,
-            "author": "Marmiton Community",
-            "url": "https://www.marmiton.org/recettes/recette_salade-nicoise_16210.aspx",
-            "ingredients": [
-                "300g de thon en boîte",
-                "4 oeufs durs",
-                "200g de tomates",
-                "100g d'olives noires",
-                "1 oignon",
-                "4 c.à.s d'huile d'olive",
-                "1 c.à.s de vinaigre",
-                "Sel et poivre",
-            ],
-            "steps": [
-                "Cuire les oeufs et les écaler.",
-                "Couper les tomates en quartiers.",
-                "Émettre le thon.",
-                "Assembler dans un saladier.",
-                "Ajouter les olives et l'oignon.",
-                "Verser la vinaigrette et mélanger.",
-            ],
-            "tags": ["Salade", "Entrée", "Léger", "Français"],
-            "image_url": "",
-        },
-        {
-            "title": "Coq au Vin",
-            "difficulty": "moyen",
-            "prep_time": 30,
-            "cook_time": 120,
-            "servings": 6,
-            "author": "Marmiton Community",
-            "url": "https://www.marmiton.org/recettes/",
-            "ingredients": [
-                "1.5 kg de poulet",
-                "750ml de vin rouge",
-                "200g de lardons",
-                "200g d'oignons",
-                "200g de champignons",
-                "3 gousses d'ail",
-                "2 carottes",
-                "Thym, laurier",
-                "Sel et poivre",
-            ],
-            "steps": [
-                "Découper le poulet.",
-                "Faire dorer les lardons dans une cocotte.",
-                "Ajouter le poulet et le faire colorer.",
-                "Ajouter les légumes et l'ail.",
-                "Verser le vin rouge.",
-                "Ajouter les herbes et laisser mijoter 2h.",
-                "Servir chaud avec des pâtes ou du riz.",
-            ],
-            "tags": ["Plat", "Viande", "Classique", "Français"],
-            "image_url": "",
-        },
-        {
-            "title": "Ratatouille Niçoise",
-            "difficulty": "moyen",
-            "prep_time": 20,
-            "cook_time": 45,
-            "servings": 4,
-            "author": "Marmiton Community",
-            "url": "https://www.marmiton.org/recettes/recette_ratatouille_8710.aspx",
-            "ingredients": [
-                "2 aubergines",
-                "2 courgettes",
-                "2 poivrons rouges",
-                "4 tomates",
-                "2 oignons",
-                "4 gousses d'ail",
-                "Huile d'olive",
-                "Thym",
-                "Sel et poivre",
-            ],
-            "steps": [
-                "Couper tous les légumes en dés.",
-                "Faire revenir les oignons et l'ail dans l'huile.",
-                "Ajouter tous les légumes progressivement.",
-                "Ajouter le thym et laisser cuire 30-45 minutes.",
-                "Assaisonner et servir.",
-            ],
-            "tags": ["Légumes", "Végétarien", "Français"],
-            "image_url": "",
-        },
-        {
-            "title": "Pâtes Aglio e Olio",
-            "difficulty": "facile",
-            "prep_time": 5,
-            "cook_time": 10,
-            "servings": 4,
-            "author": "Marmiton Community",
-            "url": "https://www.marmiton.org/recettes/",
-            "ingredients": [
-                "400g de pâtes",
-                "10 gousses d'ail",
-                "150ml d'huile d'olive",
-                "Flocons de piment",
-                "Persil frais",
-                "Sel",
-            ],
-            "steps": [
-                "Cuire les pâtes selon les indications.",
-                "Faire revenir l'ail haché dans l'huile avec les flocons de piment.",
-                "Égoutter les pâtes.",
-                "Mélanger les pâtes avec l'huile aromatisée.",
-                "Parsemer de persil frais.",
-                "Servir immédiatement.",
-            ],
-            "tags": ["Pâtes", "Végétarien", "Italien", "Rapide"],
-            "image_url": "",
-        },
-        {
-            "title": "Omelette Fines Herbes",
-            "difficulty": "facile",
-            "prep_time": 5,
-            "cook_time": 5,
-            "servings": 2,
-            "author": "Marmiton Community",
-            "url": "https://www.marmiton.org/recettes/",
-            "ingredients": [
-                "4 oeufs",
-                "30g de beurre",
-                "2 c.à.s de crème fraîche",
-                "Persil, ciboulette, estragon",
-                "Sel et poivre",
-            ],
-            "steps": [
-                "Battre les oeufs avec la crème fraîche.",
-                "Faire fondre le beurre dans une poêle.",
-                "Verser les oeufs et laisser prendre légèrement.",
-                "Ajouter les fines herbes ciselées.",
-                "Plier l'omelette et servir chaud.",
-            ],
-            "tags": ["Oeufs", "Rapide", "Français"],
-            "image_url": "",
-        },
-    ]
+    # Charger les recettes depuis le fichier JSON
+    fallback_file = Path(__file__).parent.parent / "data" / "marmiton_fallback.json"
     
-    # Filtrer selon la requête
-    query_lower = query.lower()
-    matching = [
-        r for r in fallback_recipes
-        if query_lower in r["title"].lower() or
-           any(query_lower in ing.lower() for ing in r["ingredients"])
-    ]
+    try:
+        if fallback_file.exists():
+            with open(fallback_file, 'r', encoding='utf-8') as f:
+                fallback_recipes = json.load(f)
+            logger.debug(f"📖 Chargé {len(fallback_recipes)} recettes depuis {fallback_file.name}")
+        else:
+            logger.warning(f"⚠️ Fichier fallback non trouvé: {fallback_file}")
+            fallback_recipes = []
+    except Exception as e:
+        logger.error(f"❌ Erreur chargement fallback: {e}")
+        fallback_recipes = []
+    
+    # Filtrer selon la requête si fournie
+    if query:
+        query_lower = query.lower()
+        matching = [
+            r for r in fallback_recipes
+            if query_lower in r.get("title", "").lower() or
+               any(query_lower in ing.lower() for ing in r.get("ingredients", []))
+        ]
+        recipes_to_use = matching if matching else fallback_recipes
+    else:
+        recipes_to_use = fallback_recipes
     
     # Normaliser et retourner
-    return [_normalize_marmiton_recipe(r) for r in (matching or fallback_recipes)]
+    return [_normalize_marmiton_recipe(r) for r in recipes_to_use]
 
 
 async def get_random_marmiton_recipes(count: int = 5) -> list[dict]:
@@ -379,8 +229,10 @@ async def get_random_marmiton_recipes(count: int = 5) -> list[dict]:
     logger.info(f"🎲 Recettes aléatoires Marmiton x{count}")
     
     try:
-        # Pour l'instant, utiliser le fallback
         recipes = _get_fallback_recipes("")
+        # Mélanger et retourner count recettes aléatoires
+        import random
+        random.shuffle(recipes)
         return recipes[:count]
     except Exception as e:
         logger.error(f"❌ Random recipes error: {e}")

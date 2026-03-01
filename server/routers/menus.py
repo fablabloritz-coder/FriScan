@@ -290,8 +290,13 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
                         recipe_idx += 1
                         recipe = all_recipes[recipe_idx % len(all_recipes)] if all_recipes else None
                         title = recipe.get("title", "Repas libre") if recipe else "Repas libre"
-                    recipe_id = recipe.get("id") if recipe else None
+                    
+                    # Pour les recettes externes (Marmiton), insérer NULL pour recipe_id
+                    # car l'ID de la recette ne correspond pas à un ID réel dans la BD
+                    # Le recipe_data_json contiendra les données complètes
+                    recipe_id = None  # Toujours NULL pour éviter les FK contraint errors
                     recipe_data = json.dumps(recipe) if recipe else None
+                    
                     db.execute(
                         """INSERT INTO weekly_menu (week_start, day_of_week, meal_type, recipe_id, recipe_title, servings, recipe_data_json)
                            VALUES (?, ?, ?, ?, ?, ?, ?)""",

@@ -1,0 +1,192 @@
+[
+  {
+    "title": "Ratatouille",
+    "difficulty": "moyen",
+    "prep_time": 20,
+    "cook_time": 40,
+    "servings": 4,
+    "ingredients": ["2 aubergines", "2 courgettes", "2 poivrons rouges", "4 tomates", "2 oignons", "3 gousses d'ail", "Huile d'olive", "Thym", "Sel et poivre"],
+    "steps": ["Découper les légumes", "Faire revenir l'oignon et l'ail", "Ajouter progressivement les légumes", "Ajouter le thym", "Laisser cuire 40 minutes", "Assaisonner et servir"],
+    "tags": ["Végétarien", "Légumes", "Français"]
+  },
+  {
+    "title": "Pâtes Aglio e Olio",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 10,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "10 gousses d'ail", "150ml d'huile d'olive", "Flocons de piment", "Persil frais", "Sel"],
+    "steps": ["Cuire les pâtes", "Faire revenir l'ail dans l'huile", "Égoutter les pâtes", "Mélanger", "Parsemer de persil", "Servir"],
+    "tags": ["Pâtes", "Végétarien", "Italien", "Rapide"]
+  },
+  {
+    "title": "Salade de Tomates et Concombre",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 0,
+    "servings": 4,
+    "ingredients": ["4 tomates", "1 concombre", "1 oignon rouge", "Olives noires", "Huile d'olive", "Vinaigre", "Sel et poivre"],
+    "steps": ["Découper les tomates et le concombre", "Ajouter l'oignon et les olives", "Verser l'huile et le vinaigre", "Mélanger et servir"],
+    "tags": ["Salade", "Végétarien", "Été", "Léger"]
+  },
+  {
+    "title": "Riz aux Légumes",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["300g de riz", "200g de carottes", "150g de pois", "1 oignon", "2 gousses d'ail", "Bouillon de légumes", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Faire revenir l'oignon et l'ail", "Ajouter le riz et mélanger", "Ajouter le bouillon", "Ajouter les légumes à mi-cuisson", "Cuire 15-20 minutes", "Servir"],
+    "tags": ["Riz", "Végétarien", "Facile", "Complet"]
+  },
+  {
+    "title": "Soupe de Légumes",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["2 carottes", "2 courgettes", "1 oignon", "4 tomates", "1L de bouillon", "Persil", "Sel et poivre"],
+    "steps": ["Émincer les légumes", "Faire revenir l'oignon", "Ajouter les légumes", "Verser le bouillon", "Cuire 25-30 minutes", "Servir chaud"],
+    "tags": ["Soupe", "Végétarien", "Réconfortant"]
+  },
+  {
+    "title": "Poêlée de Champignons",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["500g de champignons", "2 oignons", "2 gousses d'ail", "Huile d'olive", "Thym", "Persil", "Sel et poivre"],
+    "steps": ["Nettoyer les champignons", "Faire revenir l'oignon et l'ail", "Ajouter les champignons", "Ajouter le thym", "Cuire 10-12 minutes", "Servir"],
+    "tags": ["Champignons", "Végétarien", "Entrée", "Français"]
+  },
+  {
+    "title": "Pâtes Tomate et Basilic",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "400g de tomates", "4 gousses d'ail", "Basilic frais", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Cuire les pâtes", "Faire revenir l'ail", "Ajouter les tomates", "Cuire 10 minutes", "Ajouter le basilic", "Mélanger et servir"],
+    "tags": ["Pâtes", "Tomate", "Végétarien", "Italien"]
+  },
+  {
+    "title": "Légumes Rôtis",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["2 poivrons", "2 aubergines", "2 courgettes", "2 oignons", "Huile d'olive", "Thym et romarin", "Sel et poivre"],
+    "steps": ["Découper les légumes", "Les disposer sur una plaque", "Arroser d'huile", "Ajouter les herbes", "Rôtir 25-30 minutes", "Servir chaud ou froid"],
+    "tags": ["Légumes", "Végétarien", "Rôti", "Complet"]
+  },
+  {
+    "title": "Omelette aux Herbes",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 5,
+    "servings": 2,
+    "ingredients": ["4 œufs", "Persil frais", "Ciboulette", "Estragon", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Battre les œufs", "Ajouter les fines herbes", "Faire chauffer l'huile", "Verser les œufs", "Plier l'omelette", "Servir"],
+    "tags": ["Œufs", "Rapide", "Petit-déjeuner", "Français"]
+  },
+  {
+    "title": "Pâtes au Pesto de Menthe",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 10,
+    "servings": 4,
+    "ingredients": ["400g de pâtes", "200g de menthe fraîche", "100g de noix", "3 gousses d'ail", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Préparer le pesto avec menthe, ail et noix", "Cuire les pâtes", "Mélanger avec le pesto", "Verser l'huile", "Servir"],
+    "tags": ["Pâtes", "Végétarien", "Frais", "Rapide"]
+  },
+  {
+    "title": "Salade de Lentilles",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 25,
+    "servings": 4,
+    "ingredients": ["250g de lentilles corail", "1 oignon rouge", "1 concombre", "2 tomates", "Huile d'olive", "Vinaigre", "Herbes", "Sel et poivre"],
+    "steps": ["Cuire les lentilles", "Découper les légumes", "Mélanger les lentilles et légumes", "Préparer la vinaigrette", "Verser et mélanger", "Servir froid"],
+    "tags": ["Salade", "Lentilles", "Végétarien", "Protéines"]
+  },
+  {
+    "title": "Risotto aux Champignons",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 25,
+    "servings": 4,
+    "ingredients": ["300g de riz arborio", "300g de champignons", "1L de bouillon chaud", "1 oignon", "100ml de vin blanc", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Faire revenir l'oignon", "Ajouter le riz et mélanger", "Verser le vin", "Ajouter progressivement le bouillon", "Ajouter les champignons", "Cuire jusqu'à crémeux", "Servir"],
+    "tags": ["Riz", "Élégant", "Végétarien", "Français"]
+  },
+  {
+    "title": "Salade de Pâtes",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 10,
+    "servings": 4,
+    "ingredients": ["300g de pâtes courtes", "200g de tomates cerises", "1 concombre", "100g d'olives", "Roquette", "Huile d'olive", "Vinaigre", "Sel et poivre"],
+    "steps": ["Cuire et refroidir les pâtes", "Découper les légumes", "Mélanger tous les ingrédients", "Préparer la vinaigrette", "Verser et mélanger", "Servir"],
+    "tags": ["Salade", "Pâtes", "Végétarien", "Été"]
+  },
+  {
+    "title": "Poêlée d'Épinards",
+    "difficulty": "facile",
+    "prep_time": 5,
+    "cook_time": 10,
+    "servings": 4,
+    "ingredients": ["400g d'épinards frais", "2 gousses d'ail", "1 oignon", "Huile d'olive", "Sel, poivre et muscade"],
+    "steps": ["Faire revenir l'oignon et l'ail", "Ajouter les épinards", "Cuire jusqu'à tendres", "Assaisonner avec muscade", "Servir chaud"],
+    "tags": ["Épinards", "Légumes", "Végétarien", "Rapide"]
+  },
+  {
+    "title": "Gratin de Courges",
+    "difficulty": "moyen",
+    "prep_time": 20,
+    "cook_time": 45,
+    "servings": 6,
+    "ingredients": ["1kg de courges", "300ml de bouillon", "2 oignons", "2 gousses d'ail", "Thym et romarin", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Découper la courge", "Faire revenir oignon et ail", "Disposer la courge", "Verser le bouillon", "Ajouter les herbes", "Rôtir 40-45 minutes", "Servir chaud"],
+    "tags": ["Courges", "Automne", "Végétarien", "Réconfortant"]
+  },
+  {
+    "title": "Brocoli Rôti",
+    "difficulty": "facile",
+    "prep_time": 10,
+    "cook_time": 20,
+    "servings": 4,
+    "ingredients": ["500g de brocoli", "4 gousses d'ail", "Huile d'olive", "Jus de citron", "Sel et poivre"],
+    "steps": ["Tailler le brocoli", "Le mettre sur une plaque", "Arroser d'huile", "Ajouter l'ail", "Rôtir 18-20 minutes", "Verser du citron", "Servir"],
+    "tags": ["Brocoli", "Légumes", "Végétarien", "Sain"]
+  },
+  {
+    "title": "Soupe Minestrone",
+    "difficulty": "moyen",
+    "prep_time": 20,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["2 carottes", "2 courgettes", "200g de tomates", "100g de pâtes petites", "1 oignon", "1L de bouillon", "Basil", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Faire revenir l'oignon", "Ajouter les légumes", "Verser le bouillon", "Ajouter les pâtes", "Cuire 20 minutes", "Ajouter le basil", "Servir"],
+    "tags": ["Soupe", "Pâtes", "Végétarien", "Italien"]
+  },
+  {
+    "title": "Poêlée Asiatique",
+    "difficulty": "facile",
+    "prep_time": 15,
+    "cook_time": 15,
+    "servings": 4,
+    "ingredients": ["300g de brocoli", "200g de poivrons", "200g de champignons", "100g de germes de soja", "3 gousses d'ail", "2 c.à.s de sauce soja", "1 c.à.s de gingembre", "Huile d'arachide", "Sel et poivre"],
+    "steps": ["Émincer tous les légumes", "Faire chauffer l'huile", "Ajouter les légumes", "Ajouter sauce soja et gingembre", "Cuire 12-15 minutes", "Servir chaud"],
+    "tags": ["Asiatique", "Légumes", "Végétarien", "Rapide"]
+  },
+  {
+    "title": "Haricots à la Tomate",
+    "difficulty": "moyen",
+    "prep_time": 15,
+    "cook_time": 30,
+    "servings": 4,
+    "ingredients": ["400g de haricots secs (trempés)", "400g de tomates", "1 oignon", "3 gousses d'ail", "1 c.à.c de cumin", "Huile d'olive", "Sel et poivre"],
+    "steps": ["Faire revenir oignon et ail", "Ajouter les haricots", "Ajouter les tomates et cumin", "Cuire 25-30 minutes", "Assaisonner", "Servir chaud"],
+    "tags": ["Haricots", "Végétarien", "Riche en protéines"]
+  }
+]
