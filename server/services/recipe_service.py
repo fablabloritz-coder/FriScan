@@ -20,9 +20,51 @@ MEALDB_FILTER = "https://www.themealdb.com/api/json/v1/1/filter.php"
 MEALDB_CATEGORIES = "https://www.themealdb.com/api/json/v1/1/list.php?c=list"
 TIMEOUT = 15.0
 
+# API de traduction gratuite MyMemory
+TRANSLATION_API = "https://api.mymemory.translated.net/get"
+TRANSLATION_TIMEOUT = 5.0
+
+# Cache de traduction (en mémoire) pour éviter les requêtes répétées
+_translation_cache = {}
+
 LOCAL_RECIPES_PATH = Path(__file__).parent.parent / "data" / "local_recipes.json"
 
 # ---- Traduction anglais → français ------------------------------------------------
+
+async def _translate_text_api(text: str, source_lang: str = "en", target_lang: str = "fr") -> str:
+    """
+    Traduit un texte via l'API MyMemory (gratuite, sans clé).
+    Retourne le texte original en cas d'erreur.
+    """
+    if not text or not text.strip():
+        return text
+    
+    # Vérifier le cache
+    cache_key = f"{source_lang}:{target_lang}:{text.strip()}"
+    if cache_key in _translation_cache:
+        return _translation_cache[cache_key]
+    
+    try:
+        async with httpx.AsyncClient(timeout=TRANSLATION_TIMEOUT) as client:
+            params = {
+                "q": text,
+                "langpair": f"{source_lang}|{target_lang}"
+            }
+            resp = await client.get(TRANSLATION_API, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("responseStatus") == 200:
+                    translated = data.get("responseData", {}).get("translatedText", "")
+                    if translated and translated.strip():
+                        # Mettre en cache
+                        _translation_cache[cache_key] = translated
+                        return translated
+    except Exception as e:
+        logger.warning(f"Erreur traduction API '{text}': {e}")
+    
+    # En cas d'erreur, retourner l'original
+    return text
+
 
 # Mapping des catégories TheMealDB → français
 CATEGORY_FR = {
@@ -216,7 +258,10 @@ def _translate_instructions(text: str) -> str:
 
 
 def _translate_recipe(recipe: dict) -> dict:
-    """Traduit une recette normalisée (titre inchangé, ingrédients et instructions traduits)."""
+    """Traduit une recette normalisée (titre, ingrédients et instructions traduits)."""
+    # Traduire le titre (garder l'original si échec)
+    # Note : la traduction du titre sera faite de manière asynchrone dans get_recipes_by_category
+    
     # Traduire les ingrédients
     try:
         ingredients = json.loads(recipe.get("ingredients_json", "[]"))
@@ -240,6 +285,23 @@ def _translate_recipe(recipe: dict) -> dict:
     except Exception:
         pass
 
+    return recipe
+
+
+async def _translate_recipe_async(recipe: dict) -> dict:
+    """
+    Traduit une recette de manière asynchrone (titre + ingrédients + instructions).
+    Utilise l'API MyMemory pour traduire le titre.
+    """
+    # Traduire le titre via API
+    if recipe.get("title"):
+        original_title = recipe["title"]
+        translated_title = await _translate_text_api(original_title, "en", "fr")
+        recipe["title"] = translated_title
+    
+    # Appliquer les traductions synchrones (ingrédients, instructions, tags)
+    recipe = _translate_recipe(recipe)
+    
     return recipe
 
 
@@ -328,7 +390,7 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
                         detail_meals = detail_data.get("meals") or []
                         if detail_meals:
                             recipe = _normalize_mealdb(detail_meals[0])
-                            recipe = _translate_recipe(recipe)
+                            recipe = await _translate_recipe_async(recipe)
                             recipes.append(recipe)
                     if len(recipes) >= max_results:
                         break  # Arrêter une fois qu'on a assez
@@ -365,7 +427,13 @@ async def search_recipes_online(query: str) -> list[dict]:
                 return []
             data = resp.json()
             meals = data.get("meals") or []
-            return [_translate_recipe(_normalize_mealdb(m)) for m in meals]
+            # Traduire toutes les recettes de manière asynchrone
+            recipes = []
+            for m in meals:
+                recipe = _normalize_mealdb(m)
+                recipe = await _translate_recipe_async(recipe)
+                recipes.append(recipe)
+            return recipes
     except Exception as e:
         logger.warning(f"Erreur recherche recettes: {e}")
         return []
@@ -382,7 +450,9 @@ async def get_random_recipes(count: int = 5) -> list[dict]:
                     data = resp.json()
                     meals = data.get("meals") or []
                     for m in meals:
-                        recipes.append(_translate_recipe(_normalize_mealdb(m)))
+                        recipe = _normalize_mealdb(m)
+                        recipe = await _translate_recipe_async(recipe)
+                        recipes.append(recipe)
     except Exception as e:
         logger.warning(f"Erreur recettes aléatoires: {e}")
     return recipes

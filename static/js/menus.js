@@ -310,6 +310,7 @@
             ${recipe.source_url ? `<a href="${recipe.source_url}" target="_blank" class="btn btn-secondary" style="margin-top:16px;"><i class="fas fa-external-link-alt"></i> Voir la source</a>` : ''}
             <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-success btn-save-menu-recipe"><i class="fas fa-bookmark"></i> Sauvegarder dans Mes recettes</button>
+                <button class="btn btn-danger btn-ban-menu-recipe" title="Bannir cette recette"><i class="fas fa-ban"></i> Bannir</button>
             </div>
         `;
 
@@ -356,6 +357,24 @@
                     saveRecipeBtn.disabled = true;
                     saveRecipeBtn.innerHTML = '<i class="fas fa-check"></i> Sauvegardée';
                     saveRecipeBtn.style.background = '#6b7280'; saveRecipeBtn.style.color = '#fff';
+                }
+            });
+        }
+
+        // Handler pour bannir la recette
+        const banRecipeBtn = content.querySelector('.btn-ban-menu-recipe');
+        if (banRecipeBtn) {
+            banRecipeBtn.addEventListener('click', async () => {
+                const ok = await FrigoScan.confirm('Bannir cette recette', `Bannir « ${recipe.title} » ? Elle n'apparaîtra plus dans les suggestions ni le menu de la semaine.`);
+                if (!ok) return;
+                const res = await FrigoScan.API.post('/api/recipes/ban', { title: recipe.title, image_url: recipe.image_url || '' });
+                if (res.success) {
+                    FrigoScan.toast(`"${recipe.title}" bannie — elle n'apparaîtra plus dans les suggestions.`, 'success');
+                    modal.classList.add('hidden');
+                    // Supprimer l'entrée du menu si elle est bannie
+                    if (entry && entry.id) {
+                        await Menus.removeEntry(entry.id);
+                    }
                 }
             });
         }
