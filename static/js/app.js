@@ -152,7 +152,7 @@ FrigoScan.navigate = function (viewName) {
         recipes: `${logo} <span>Recettes</span>`,
         menu: `${logo} <span>Menu semaine</span>`,
         seasonal: `${logo} <span>De saison</span>`,
-        shopping: `${logo} <span>Courses</span>`,
+        shopping: `${logo} <span>Liste de courses</span>`,
         stats: `${logo} <span>Statistiques</span>`,
         settings: `${logo} <span>Réglages</span>`,
     };

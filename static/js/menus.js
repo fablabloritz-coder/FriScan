@@ -182,11 +182,16 @@
 
     // ---- Détail d'une recette du menu ----
     async function showMenuRecipeDetail(entry) {
+        console.log('showMenuRecipeDetail called for entry:', entry);
         let recipe = null;
         try {
             const data = await FrigoScan.API.get(`/api/menus/${entry.id}/recipe`);
-            if (data.success && data.recipe) recipe = data.recipe;
-        } catch (e) {}
+            console.log('Recipe API response:', data);
+            if (data && data.success && data.recipe) recipe = data.recipe;
+            else console.warn('Invalid API response:', data);
+        } catch (e) {
+            console.error('Error fetching recipe:', e);
+        }
 
         if (!recipe) {
             recipe = {
@@ -200,7 +205,8 @@
 
         const modal = document.getElementById('recipe-detail-modal');
         const content = document.getElementById('recipe-detail-content');
-        if (!modal || !content) { FrigoScan.toast('Détail non disponible.', 'warning'); return; }
+        if (!modal) { console.error('Modal not found in DOM'); FrigoScan.toast('Modal non trouvé.', 'error'); return; }
+        if (!content) { console.error('Modal content not found in DOM'); FrigoScan.toast('Contenu modal non trouvé.', 'error'); return; }
 
         let ingredients = [];
         try { ingredients = JSON.parse(recipe.ingredients_json || '[]'); } catch (e) {}

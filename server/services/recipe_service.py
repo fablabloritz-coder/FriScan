@@ -18,7 +18,7 @@ MEALDB_LOOKUP = "https://www.themealdb.com/api/json/v1/1/lookup.php"
 MEALDB_RANDOM = "https://www.themealdb.com/api/json/v1/1/random.php"
 MEALDB_FILTER = "https://www.themealdb.com/api/json/v1/1/filter.php"
 MEALDB_CATEGORIES = "https://www.themealdb.com/api/json/v1/1/list.php?c=list"
-TIMEOUT = 8.0
+TIMEOUT = 15.0
 
 LOCAL_RECIPES_PATH = Path(__file__).parent.parent / "data" / "local_recipes.json"
 
@@ -126,6 +126,45 @@ def _translate_ingredient_name(name_en: str) -> str:
     return name_en
 
 
+def _translate_measure(measure_en: str) -> str:
+    """Traduit les unités de mesure anglaises en français."""
+    if not measure_en:
+        return measure_en
+    m = measure_en.strip().lower()
+    # Mapping des unités
+    units_map = {
+        'teaspoon': 'c. à café', 'teaspoons': 'c. à café', 'tsp': 'c. à café',
+        'tablespoon': 'c. à soupe', 'tablespoons': 'c. à soupe', 'tbsp': 'c. à soupe',
+        'cup': 'tasse', 'cups': 'tasse',
+        'ounce': 'once', 'ounces': 'once', 'oz': 'once',
+        'pound': 'livre', 'pounds': 'livre', 'lb': 'livre', 'lbs': 'livre',
+        'gram': 'g', 'grams': 'g', 'g': 'g', 'gr': 'g',
+        'kilogram': 'kg', 'kg': 'kg',
+        'milliliter': 'mL', 'milliliters': 'mL', 'ml': 'mL',
+        'centiliter': 'cL', 'centiliters': 'cL', 'cl': 'cL',
+        'liter': 'L', 'liters': 'L', 'l': 'L',
+        'pinch': 'pincée', 'pinches': 'pincée',
+        'dash': 'trait', 'dashes': 'trait',
+        'splash': 'trait', 'splashes': 'trait',
+    }
+    # Chercher l'unité (la partie sans les chiffres)
+    import re
+    match = re.match(r'^([\d.,/\s]*)(.*)$', measure_en.strip())
+    if match:
+        qty_part = match.group(1).strip()  # e.g. "1/2", "250"
+        unit_part = match.group(2).strip().lower()  # e.g. "cup", "ml"
+        
+        # Traduire l'unité
+        translated_unit = units_map.get(unit_part, unit_part)
+        
+        # Recombiner
+        if qty_part:
+            return f"{qty_part} {translated_unit}".strip()
+        else:
+            return translated_unit
+    return measure_en
+
+
 def _translate_instructions(text: str) -> str:
     """Traduction basique des instructions anglaises → français (mots-clés courants)."""
     if not text:
@@ -184,6 +223,8 @@ def _translate_recipe(recipe: dict) -> dict:
         for ing in ingredients:
             if ing.get("name"):
                 ing["name"] = _translate_ingredient_name(ing["name"])
+            if ing.get("measure"):
+                ing["measure"] = _translate_measure(ing["measure"])
         recipe["ingredients_json"] = json.dumps(ingredients)
     except Exception:
         pass
@@ -266,11 +307,16 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.get(MEALDB_FILTER, params={"c": category})
             if resp.status_code != 200:
-                return []
+                # Fallback : chercher par mot-clé
+                logger.info(f"Catégorie {category} ne retourne rien, fallback recherche")
+                return await search_recipes_online(category)
             data = resp.json()
             meals = data.get("meals") or []
+            if not meals:
+                # Fallback : chercher par mot-clé
+                return await search_recipes_online(category)
             rnd.shuffle(meals)
-            meals = meals[:max_results]
+            meals = meals[:max_results + 5]  # Charger plus au cas où certains échouent
             for meal in meals:
                 meal_id = meal.get("idMeal")
                 if not meal_id:
@@ -284,11 +330,19 @@ async def get_recipes_by_category(category: str, max_results: int = 12) -> list[
                             recipe = _normalize_mealdb(detail_meals[0])
                             recipe = _translate_recipe(recipe)
                             recipes.append(recipe)
-                except Exception:
+                    if len(recipes) >= max_results:
+                        break  # Arrêter une fois qu'on a assez
+                except Exception as e:
+                    logger.warning(f"Erreur lookup {meal_id}: {e}")
                     continue
     except Exception as e:
-        logger.warning(f"Erreur recettes par catégorie: {e}")
-    return recipes
+        logger.warning(f"Erreur recettes par catégorie {category}: {e}")
+        # Dernière tentative : recherche par mot-clé
+        try:
+            return await search_recipes_online(category)
+        except Exception:
+            pass
+    return recipes[:max_results]
 
 
 def load_local_recipes() -> list[dict]:

@@ -20,6 +20,7 @@
 
         document.getElementById('btn-shopping-check-stocks').onclick = checkStocks;
         document.getElementById('btn-shopping-clear-done').onclick = clearPurchased;
+        document.getElementById('btn-shopping-clear-all').onclick = clearAll;
     }
 
     async function loadList() {
@@ -97,6 +98,16 @@
 
     async function clearPurchased() {
         const data = await FrigoScan.API.del('/api/shopping/clear/purchased');
+        if (data.success) {
+            FrigoScan.toast(data.message, 'success');
+            loadList();
+        }
+    }
+
+    async function clearAll() {
+        const ok = await FrigoScan.confirm('Supprimer liste', 'Vider entièrement la liste de courses ?');
+        if (!ok) return;
+        const data = await FrigoScan.API.del('/api/shopping/clear/all');
         if (data.success) {
             FrigoScan.toast(data.message, 'success');
             loadList();
