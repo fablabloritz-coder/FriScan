@@ -55,6 +55,9 @@
         document.getElementById('btn-recipe-suggest').addEventListener('click', suggestRecipes);
         document.getElementById('btn-recipe-suggest-random').addEventListener('click', suggestRandomRecipes);
 
+        // Charger les catégories pour le filtre
+        loadCategoryFilter();
+
         // Onglets recherche / sauvegardées / bannies
         document.querySelectorAll('[data-recipe-tab]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -72,6 +75,68 @@
         // Charger les bannies au démarrage
         refreshBannedTitles();
     });
+
+    // ---- Filtre par catégorie ----
+    const CATEGORY_ICONS = {
+        'Beef': '🥩', 'Chicken': '🍗', 'Dessert': '🍰', 'Lamb': '🐑',
+        'Pasta': '🍝', 'Pork': '🥓', 'Seafood': '🦐', 'Side': '🥗',
+        'Starter': '🥣', 'Vegetarian': '🥬', 'Vegan': '🌱',
+        'Breakfast': '🥞', 'Miscellaneous': '🍽️'
+    };
+
+    async function loadCategoryFilter() {
+        const container = document.getElementById('recipe-category-filter');
+        if (!container) return;
+        try {
+            const data = await FrigoScan.API.get('/api/recipes/categories');
+            if (!data.success) return;
+            container.innerHTML = (data.categories || []).map(c =>
+                `<button class="btn btn-sm btn-category-filter" data-cat="${c.id}" title="${c.label}">
+                    ${CATEGORY_ICONS[c.id] || '📖'} ${c.label}
+                </button>`
+            ).join('');
+
+            container.querySelectorAll('.btn-category-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Toggle active state
+                    const wasActive = btn.classList.contains('active');
+                    container.querySelectorAll('.btn-category-filter').forEach(b => b.classList.remove('active'));
+                    if (!wasActive) {
+                        btn.classList.add('active');
+                        suggestByCategory(btn.dataset.cat);
+                    } else {
+                        // Deselect — clear results
+                        document.getElementById('recipes-list').innerHTML = '';
+                        document.getElementById('recipes-empty').classList.remove('hidden');
+                    }
+                });
+            });
+        } catch (e) { console.warn('Impossible de charger les catégories', e); }
+    }
+
+    let isSuggestingCategory = false;
+    async function suggestByCategory(category) {
+        if (isSuggestingCategory) return;
+        isSuggestingCategory = true;
+        FrigoScan.toast(`Chargement des recettes « ${category} »...`, 'info');
+        try {
+            await refreshSavedTitles();
+            const data = await FrigoScan.API.get(`/api/recipes/suggest/category/${encodeURIComponent(category)}?max_results=12`);
+            if (data.success) {
+                let recipes = data.recipes || [];
+                recipes = recipes.filter(r => {
+                    const t = r.title.toLowerCase().trim();
+                    return !savedRecipeTitles.has(t) && !bannedTitles.has(t);
+                });
+                if (recipes.length === 0) {
+                    FrigoScan.toast('Aucune recette trouvée pour cette catégorie.', 'warning');
+                }
+                renderRecipes(recipes);
+            }
+        } finally {
+            isSuggestingCategory = false;
+        }
+    }
 
     // ---- Recettes sauvegardées ----
     async function loadSavedRecipes() {

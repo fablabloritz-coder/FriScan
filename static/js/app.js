@@ -68,6 +68,24 @@ FrigoScan.API = {
             return { success: false, error: e.message };
         }
     },
+    async patch(url, data) {
+        try {
+            const resp = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data || {}),
+            });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.detail || err.message || `Erreur HTTP ${resp.status}`);
+            }
+            return await resp.json();
+        } catch (e) {
+            console.error('PATCH error:', url, e);
+            FrigoScan.toast(e.message || 'Erreur réseau.', 'error');
+            return { success: false, error: e.message };
+        }
+    },
 };
 
 // =====================================================================

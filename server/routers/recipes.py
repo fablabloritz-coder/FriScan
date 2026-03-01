@@ -7,7 +7,8 @@ from server.database import get_db, dict_from_row, rows_to_list
 from server.models import RecipeCreate
 from server.services.recipe_service import (
     search_recipes_online, get_random_recipes, compute_match_score,
-    filter_by_diet, suggest_alternatives, load_local_recipes
+    filter_by_diet, suggest_alternatives, load_local_recipes,
+    get_recipes_by_category, RECIPE_CATEGORIES_FR
 )
 import json
 import random as rnd
@@ -223,6 +224,51 @@ def get_alternatives(ingredient: str):
     """Retourne des alternatives pour un ingrédient manquant."""
     alts = suggest_alternatives(ingredient)
     return {"success": True, "ingredient": ingredient, "alternatives": alts}
+
+
+# ---- Catégories de recettes ----
+
+@router.get("/categories")
+def list_categories():
+    """Retourne les catégories de recettes disponibles (en français)."""
+    return {"success": True, "categories": RECIPE_CATEGORIES_FR}
+
+
+@router.get("/suggest/category/{category}")
+async def suggest_by_category(category: str, max_results: int = 12):
+    """
+    Suggestions de recettes par catégorie TheMealDB (traduit en français).
+    """
+    db = get_db()
+    try:
+        diets_row = db.execute("SELECT value FROM settings WHERE key='diets'").fetchone()
+        allergens_row = db.execute("SELECT value FROM settings WHERE key='allergens'").fetchone()
+        diets = json.loads(diets_row["value"]) if diets_row else []
+        allergens = json.loads(allergens_row["value"]) if allergens_row else []
+
+        custom_excl_row = db.execute("SELECT value FROM settings WHERE key='custom_exclusions'").fetchone()
+        custom_exclusions = json.loads(custom_excl_row["value"]) if custom_excl_row else []
+
+        banned_rows = db.execute("SELECT LOWER(title) as title FROM banned_recipes").fetchall()
+        banned_titles = set(r["title"] for r in banned_rows)
+
+        recipes = await get_recipes_by_category(category, max_results=max_results + 5)
+
+        # Filtrer par régime
+        recipes = filter_by_diet(recipes, diets, allergens, custom_exclusions)
+
+        # Filtrer les bannies + dédupliquer
+        seen = set()
+        unique = []
+        for r in recipes:
+            title = r.get("title", "").lower().strip()
+            if title and title not in seen and title not in banned_titles:
+                seen.add(title)
+                unique.append(r)
+
+        return {"success": True, "recipes": unique[:max_results], "category": category}
+    finally:
+        db.close()
 
 
 # ---- Recettes bannies ----

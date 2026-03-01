@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS weekly_menu (
     recipe_title TEXT,
     notes TEXT,
     servings INTEGER DEFAULT 4,
+    is_pinned INTEGER DEFAULT 0,
     FOREIGN KEY (recipe_id) REFERENCES recipes(id)
 );
 
@@ -166,6 +167,12 @@ def init_db():
                 "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
                 (key, value),
             )
+        # Migration : ajouter is_pinned si absent
+        try:
+            conn.execute("ALTER TABLE weekly_menu ADD COLUMN is_pinned INTEGER DEFAULT 0")
+            conn.commit()
+        except Exception:
+            pass  # Colonne déjà existante
         conn.commit()
     finally:
         conn.close()

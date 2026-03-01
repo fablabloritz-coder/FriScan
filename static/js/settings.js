@@ -340,13 +340,23 @@
     };
 
     // ---- Personnalisation des icônes ----
+    // Charge les aliments personnalisés depuis localStorage (même logique que manual-add.js)
+    function getCustomFoods(category) {
+        try {
+            const data = JSON.parse(localStorage.getItem('frigoscan-custom-foods') || '{}');
+            return data[category] || [];
+        } catch { return []; }
+    }
+
     Settings.loadIconCategory = function (category) {
         const grid = document.getElementById('icon-edit-grid');
         if (!grid || !category) { if (grid) grid.innerHTML = ''; return; }
 
-        // Récupérer la FOOD_DB depuis ManualAdd
+        // Récupérer la FOOD_DB depuis ManualAdd + les aliments custom
         const FOOD_DB = FrigoScan.ManualAdd && FrigoScan.ManualAdd.FOOD_DB ? FrigoScan.ManualAdd.FOOD_DB : {};
-        const foods = FOOD_DB[category] || [];
+        const baseFoods = FOOD_DB[category] || [];
+        const customFoods = getCustomFoods(category);
+        const foods = [...baseFoods, ...customFoods];
         const customIcons = JSON.parse(localStorage.getItem('frigoscan-custom-icons') || '{}');
         const catIcons = customIcons[category] || {};
 
@@ -520,7 +530,10 @@
         if (!tabsContainer) return;
 
         const FOOD_DB = FrigoScan.ManualAdd && FrigoScan.ManualAdd.FOOD_DB ? FrigoScan.ManualAdd.FOOD_DB : {};
-        const cats = Object.keys(FOOD_DB);
+        // Inclure aussi les catégories custom (si l'utilisateur a ajouté des aliments dans une catégorie qui existe déjà ou nouvelle)
+        const customFoodsAll = JSON.parse(localStorage.getItem('frigoscan-custom-foods') || '{}');
+        const allCats = new Set([...Object.keys(FOOD_DB), ...Object.keys(customFoodsAll)]);
+        const cats = [...allCats];
 
         const CATEGORY_EMOJIS = {
             'fruits': '🍎', 'légumes': '🥕', 'viandes': '🥩', 'poissons': '🐟',

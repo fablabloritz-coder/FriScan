@@ -64,6 +64,78 @@ def add_menu_entry(entry: MenuEntry):
         db.close()
 
 
+@router.patch("/{entry_id}/pin")
+def toggle_pin(entry_id: int):
+    """Basculer l'état épinglé d'une entrée du menu."""
+    db = get_db()
+    try:
+        row = db.execute("SELECT id, is_pinned FROM weekly_menu WHERE id=?", (entry_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "Entrée introuvable.")
+        new_val = 0 if row["is_pinned"] else 1
+        db.execute("UPDATE weekly_menu SET is_pinned=? WHERE id=?", (new_val, entry_id))
+        db.commit()
+        return {"success": True, "is_pinned": bool(new_val), "message": "Épinglé !" if new_val else "Désépinglé."}
+    finally:
+        db.close()
+
+
+@router.patch("/swap")
+def swap_entries(payload: dict):
+    """Échange deux entrées du menu (drag & drop)."""
+    id_a = payload.get("id_a")
+    id_b = payload.get("id_b")
+    if not id_a or not id_b:
+        raise HTTPException(400, "Deux IDs requis.")
+    db = get_db()
+    try:
+        a = db.execute("SELECT * FROM weekly_menu WHERE id=?", (id_a,)).fetchone()
+        b = db.execute("SELECT * FROM weekly_menu WHERE id=?", (id_b,)).fetchone()
+        if not a or not b:
+            raise HTTPException(404, "Entrée(s) introuvable(s).")
+        # Échanger recipe_id, recipe_title, notes, servings (garder le jour/repas en place)
+        db.execute(
+            "UPDATE weekly_menu SET recipe_id=?, recipe_title=?, notes=?, servings=? WHERE id=?",
+            (b["recipe_id"], b["recipe_title"], b["notes"], b["servings"], id_a)
+        )
+        db.execute(
+            "UPDATE weekly_menu SET recipe_id=?, recipe_title=?, notes=?, servings=? WHERE id=?",
+            (a["recipe_id"], a["recipe_title"], a["notes"], a["servings"], id_b)
+        )
+        db.commit()
+        return {"success": True, "message": "Entrées échangées."}
+    finally:
+        db.close()
+
+
+@router.get("/{entry_id}/recipe")
+def get_menu_recipe_detail(entry_id: int):
+    """Récupère le détail complet d'une recette du menu."""
+    db = get_db()
+    try:
+        entry = db.execute("SELECT * FROM weekly_menu WHERE id=?", (entry_id,)).fetchone()
+        if not entry:
+            raise HTTPException(404, "Entrée introuvable.")
+        recipe_id = entry["recipe_id"]
+        if recipe_id:
+            recipe = db.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,)).fetchone()
+            if recipe:
+                return {"success": True, "recipe": dict_from_row(recipe)}
+        # Pas de recette en base — retourner les infos basiques
+        return {
+            "success": True,
+            "recipe": {
+                "title": entry["recipe_title"] or "Repas libre",
+                "ingredients_json": "[]",
+                "instructions": "",
+                "servings": entry["servings"] or 4,
+                "image_url": "",
+            }
+        }
+    finally:
+        db.close()
+
+
 @router.post("/generate")
 async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "fridge"):
     """
@@ -178,19 +250,38 @@ async def generate_menu(week_start: str = None, servings: int = 4, mode: str = "
         elif mode == "scratch":
             rnd.shuffle(all_recipes)
 
-        # Effacer le menu existant pour cette semaine
-        db.execute("DELETE FROM weekly_menu WHERE week_start = ?", (week_start,))
+        # Effacer le menu existant pour cette semaine (sauf entrées épinglées)
+        pinned_rows = db.execute(
+            "SELECT * FROM weekly_menu WHERE week_start = ? AND is_pinned = 1",
+            (week_start,)
+        ).fetchall()
+        pinned_slots = set()
+        pinned_titles = set()
+        for pr in pinned_rows:
+            pinned_slots.add((pr["day_of_week"], pr["meal_type"]))
+            if pr["recipe_title"]:
+                pinned_titles.add(pr["recipe_title"].lower().strip())
 
-        # Générer le menu : déjeuner + dîner pour 7 jours
+        db.execute("DELETE FROM weekly_menu WHERE week_start = ? AND is_pinned = 0", (week_start,))
+
+        # Générer le menu : déjeuner + dîner pour 7 jours (sauter les slots épinglés)
         menu = []
         recipe_idx = 0
         meal_types = ["lunch", "dinner"]
         for day in range(7):
             for meal in meal_types:
+                if (day, meal) in pinned_slots:
+                    # Ce slot est épinglé, ne pas le toucher
+                    continue
                 recipe = all_recipes[recipe_idx % len(all_recipes)] if all_recipes else None
                 if recipe:
                     title = recipe.get("title", "Repas libre")
-                    recipe_id = recipe.get("id")
+                    # Éviter de réutiliser un titre déjà épinglé
+                    if title.lower().strip() in pinned_titles:
+                        recipe_idx += 1
+                        recipe = all_recipes[recipe_idx % len(all_recipes)] if all_recipes else None
+                        title = recipe.get("title", "Repas libre") if recipe else "Repas libre"
+                    recipe_id = recipe.get("id") if recipe else None
                     db.execute(
                         """INSERT INTO weekly_menu (week_start, day_of_week, meal_type, recipe_id, recipe_title, servings)
                            VALUES (?, ?, ?, ?, ?, ?)""",

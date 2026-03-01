@@ -731,12 +731,45 @@ a { color: var(--primary); text-decoration: none; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 0;
+    padding: 8px 4px;
     border-bottom: 1px solid var(--border);
+    gap: 8px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s, box-shadow 0.15s, border-color 0.2s;
 }
+.menu-meal[draggable="true"] { cursor: grab; }
+.menu-meal[draggable="true"]:active { cursor: grabbing; }
 .menu-meal:last-child { border: none; }
-.menu-meal-type { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
-.menu-meal-recipe { font-weight: 500; }
+.menu-meal.pinned {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.03));
+    border-left: 3px solid var(--primary);
+    padding-left: 8px;
+}
+.menu-meal.dragging { opacity: 0.4; }
+.menu-meal.drag-over {
+    background: var(--bg-hover);
+    box-shadow: inset 0 0 0 2px var(--primary);
+    border-radius: var(--radius-sm);
+}
+.menu-meal-type { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; min-width: 70px; }
+.menu-meal-recipe { font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-meal-recipe[style*="cursor: pointer"]:hover { color: var(--primary); text-decoration: underline; }
+.menu-meal-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.menu-action-btn {
+    width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 0.75rem; background: var(--bg-hover); border: 1px solid var(--border);
+    color: var(--text-muted); transition: all 0.15s;
+}
+.menu-action-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.menu-action-btn.pinned { color: var(--primary); border-color: var(--primary); background: rgba(59,130,246,0.1); }
+
+/* Category filter buttons */
+.btn-category-filter {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 4px 12px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s;
+}
+.btn-category-filter:hover { border-color: var(--primary); color: var(--primary); }
+.btn-category-filter.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 /* ------------------------------------------------------------------ */
 /* Seasonal Grid                                                      */

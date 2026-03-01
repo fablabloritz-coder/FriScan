@@ -17,9 +17,239 @@ MEALDB_SEARCH = "https://www.themealdb.com/api/json/v1/1/search.php"
 MEALDB_LOOKUP = "https://www.themealdb.com/api/json/v1/1/lookup.php"
 MEALDB_RANDOM = "https://www.themealdb.com/api/json/v1/1/random.php"
 MEALDB_FILTER = "https://www.themealdb.com/api/json/v1/1/filter.php"
+MEALDB_CATEGORIES = "https://www.themealdb.com/api/json/v1/1/list.php?c=list"
 TIMEOUT = 8.0
 
 LOCAL_RECIPES_PATH = Path(__file__).parent.parent / "data" / "local_recipes.json"
+
+# ---- Traduction anglais → français ------------------------------------------------
+
+# Mapping des catégories TheMealDB → français
+CATEGORY_FR = {
+    "Beef": "Bœuf", "Breakfast": "Petit-déjeuner", "Chicken": "Poulet",
+    "Dessert": "Dessert", "Goat": "Chèvre", "Lamb": "Agneau",
+    "Miscellaneous": "Divers", "Pasta": "Pâtes", "Pork": "Porc",
+    "Seafood": "Fruits de mer", "Side": "Accompagnement", "Starter": "Entrée",
+    "Vegan": "Végan", "Vegetarian": "Végétarien",
+}
+CATEGORY_EN = {v: k for k, v in CATEGORY_FR.items()}  # reverse
+
+# Dictionnaire d'ingrédients EN→FR fréquents
+INGREDIENT_FR = {
+    "chicken": "poulet", "chicken breast": "blanc de poulet", "chicken thighs": "cuisses de poulet",
+    "beef": "bœuf", "pork": "porc", "lamb": "agneau", "salmon": "saumon",
+    "tuna": "thon", "shrimp": "crevettes", "prawns": "crevettes",
+    "egg": "œuf", "eggs": "œufs", "butter": "beurre", "oil": "huile",
+    "olive oil": "huile d'olive", "vegetable oil": "huile végétale",
+    "salt": "sel", "pepper": "poivre", "sugar": "sucre", "flour": "farine",
+    "milk": "lait", "cream": "crème", "heavy cream": "crème épaisse",
+    "sour cream": "crème aigre", "cheese": "fromage", "parmesan cheese": "parmesan",
+    "cheddar cheese": "cheddar", "mozzarella": "mozzarella",
+    "onion": "oignon", "onions": "oignons", "garlic": "ail", "garlic clove": "gousse d'ail",
+    "garlic cloves": "gousses d'ail", "tomato": "tomate", "tomatoes": "tomates",
+    "potato": "pomme de terre", "potatoes": "pommes de terre",
+    "carrot": "carotte", "carrots": "carottes",
+    "celery": "céleri", "mushrooms": "champignons", "mushroom": "champignon",
+    "spinach": "épinards", "broccoli": "brocoli", "zucchini": "courgette",
+    "bell pepper": "poivron", "red pepper": "poivron rouge", "green pepper": "poivron vert",
+    "lettuce": "laitue", "cucumber": "concombre", "avocado": "avocat",
+    "lemon": "citron", "lemon juice": "jus de citron", "lime": "citron vert",
+    "orange": "orange", "apple": "pomme", "banana": "banane",
+    "rice": "riz", "pasta": "pâtes", "noodles": "nouilles", "bread": "pain",
+    "spaghetti": "spaghetti", "penne": "penne", "macaroni": "macaroni",
+    "water": "eau", "stock": "bouillon", "chicken stock": "bouillon de poulet",
+    "beef stock": "bouillon de bœuf", "vegetable stock": "bouillon de légumes",
+    "wine": "vin", "red wine": "vin rouge", "white wine": "vin blanc",
+    "soy sauce": "sauce soja", "tomato sauce": "sauce tomate",
+    "tomato paste": "concentré de tomate", "tomato puree": "purée de tomate",
+    "worcestershire sauce": "sauce Worcestershire", "hot sauce": "sauce piquante",
+    "mustard": "moutarde", "ketchup": "ketchup", "mayonnaise": "mayonnaise",
+    "vinegar": "vinaigre", "balsamic vinegar": "vinaigre balsamique",
+    "honey": "miel", "maple syrup": "sirop d'érable",
+    "cinnamon": "cannelle", "cumin": "cumin", "paprika": "paprika",
+    "oregano": "origan", "basil": "basilic", "thyme": "thym",
+    "rosemary": "romarin", "parsley": "persil", "bay leaf": "feuille de laurier",
+    "bay leaves": "feuilles de laurier", "chili": "piment", "ginger": "gingembre",
+    "nutmeg": "noix de muscade", "turmeric": "curcuma", "coriander": "coriandre",
+    "vanilla": "vanille", "vanilla extract": "extrait de vanille",
+    "chocolate": "chocolat", "cocoa": "cacao",
+    "baking powder": "levure chimique", "baking soda": "bicarbonate de soude",
+    "yeast": "levure", "cornstarch": "fécule de maïs",
+    "bacon": "bacon", "ham": "jambon", "sausage": "saucisse",
+    "coconut milk": "lait de coco", "coconut": "noix de coco",
+    "peanut butter": "beurre de cacahuète", "almonds": "amandes",
+    "walnuts": "noix", "cashews": "noix de cajou", "pine nuts": "pignons de pin",
+    "sesame oil": "huile de sésame", "sesame seeds": "graines de sésame",
+    "breadcrumbs": "chapelure", "plain flour": "farine", "self-raising flour": "farine avec levure",
+    "double cream": "crème épaisse", "single cream": "crème liquide",
+    "spring onions": "oignons verts", "red onion": "oignon rouge", "red onions": "oignons rouges",
+    "cherry tomatoes": "tomates cerise", "chopped tomatoes": "tomates concassées",
+    "canned tomatoes": "tomates en conserve", "sun-dried tomatoes": "tomates séchées",
+    "green beans": "haricots verts", "kidney beans": "haricots rouges",
+    "chickpeas": "pois chiches", "lentils": "lentilles",
+    "frozen peas": "petits pois surgelés", "peas": "petits pois",
+    "sweetcorn": "maïs doux", "corn": "maïs",
+    "chili powder": "poudre de piment", "cayenne pepper": "poivre de Cayenne",
+    "black pepper": "poivre noir", "white pepper": "poivre blanc",
+    "fish sauce": "sauce poisson (nuoc-mâm)", "oyster sauce": "sauce huître",
+    "rice vinegar": "vinaigre de riz", "mirin": "mirin",
+    "dried oregano": "origan séché", "dried basil": "basilic séché",
+    "dried thyme": "thym séché", "mixed herbs": "herbes mélangées",
+    "salsa": "salsa", "pesto": "pesto",
+    "cream cheese": "fromage frais", "ricotta": "ricotta",
+    "feta": "feta", "gouda": "gouda", "gruyere": "gruyère",
+    "whipping cream": "crème fouettée", "ice cream": "glace",
+    "brown sugar": "sucre roux", "icing sugar": "sucre glace",
+    "caster sugar": "sucre en poudre", "demerara sugar": "cassonade",
+    "dark chocolate": "chocolat noir", "white chocolate": "chocolat blanc",
+    "milk chocolate": "chocolat au lait",
+    "strawberries": "fraises", "blueberries": "myrtilles", "raspberries": "framboises",
+    "mango": "mangue", "pineapple": "ananas", "peach": "pêche",
+    "apricot": "abricot", "plum": "prune", "pear": "poire", "grapes": "raisin",
+    "leek": "poireau", "turnip": "navet", "cabbage": "chou",
+    "cauliflower": "chou-fleur", "kale": "chou frisé", "aubergine": "aubergine",
+    "eggplant": "aubergine", "courgette": "courgette", "asparagus": "asperges",
+    "artichoke": "artichaut", "beetroot": "betterave", "radish": "radis",
+    "fennel": "fenouil", "endive": "endive",
+    "tofu": "tofu", "tempeh": "tempeh",
+}
+
+def _translate_ingredient_name(name_en: str) -> str:
+    """Traduit un nom d'ingrédient anglais en français."""
+    key = name_en.lower().strip()
+    if key in INGREDIENT_FR:
+        return INGREDIENT_FR[key]
+    # Essayer sans 's' final
+    if key.endswith('s') and key[:-1] in INGREDIENT_FR:
+        return INGREDIENT_FR[key[:-1]]
+    # Retourner tel quel si pas de traduction
+    return name_en
+
+
+def _translate_instructions(text: str) -> str:
+    """Traduction basique des instructions anglaises → français (mots-clés courants)."""
+    if not text:
+        return text
+    replacements = [
+        ("Preheat the oven to", "Préchauffer le four à"),
+        ("Preheat oven to", "Préchauffer le four à"),
+        ("Heat the oil", "Chauffer l'huile"),
+        ("Heat oil", "Chauffer l'huile"),
+        ("Heat the butter", "Chauffer le beurre"),
+        ("Add the", "Ajouter les"), ("Add", "Ajouter"),
+        ("Mix well", "Bien mélanger"), ("Mix together", "Mélanger ensemble"),
+        ("Stir in", "Incorporer"), ("Stir well", "Bien remuer"),
+        ("Season with salt and pepper", "Assaisonner de sel et poivre"),
+        ("Season to taste", "Assaisonner à votre goût"),
+        ("Bring to a boil", "Porter à ébullition"),
+        ("Bring to the boil", "Porter à ébullition"),
+        ("Simmer for", "Laisser mijoter pendant"),
+        ("Simmer", "Laisser mijoter"),
+        ("Cook for", "Cuire pendant"), ("Cook until", "Cuire jusqu'à ce que"),
+        ("Bake for", "Cuire au four pendant"), ("Bake", "Cuire au four"),
+        ("Fry", "Faire frire"), ("Fry until", "Faire frire jusqu'à"),
+        ("Sauté", "Faire sauter"), ("Sautee", "Faire sauter"),
+        ("Chop", "Hacher"), ("Dice", "Couper en dés"),
+        ("Slice", "Trancher"), ("Mince", "Émincer"),
+        ("Peel", "Éplucher"), ("Grate", "Râper"),
+        ("Drain", "Égoutter"), ("Rinse", "Rincer"),
+        ("Serve", "Servir"), ("Serve immediately", "Servir immédiatement"),
+        ("Serve hot", "Servir chaud"), ("Serve cold", "Servir froid"),
+        ("Garnish with", "Garnir de"), ("Top with", "Garnir de"),
+        ("Let it rest", "Laisser reposer"), ("Let rest", "Laisser reposer"),
+        ("Cover and", "Couvrir et"), ("Remove from heat", "Retirer du feu"),
+        ("Set aside", "Réserver"), ("Meanwhile", "Pendant ce temps"),
+        ("In a large bowl", "Dans un grand bol"),
+        ("In a large pan", "Dans une grande poêle"),
+        ("In a large pot", "Dans une grande casserole"),
+        ("In a medium bowl", "Dans un bol moyen"),
+        ("In a small bowl", "Dans un petit bol"),
+        ("minutes", "minutes"), ("hours", "heures"),
+        ("until golden", "jusqu'à ce que ce soit doré"),
+        ("until crispy", "jusqu'à ce que ce soit croustillant"),
+        ("until tender", "jusqu'à ce que ce soit tendre"),
+        ("until soft", "jusqu'à ce que ce soit tendre"),
+    ]
+    result = text
+    for en, fr in replacements:
+        result = re.sub(re.escape(en), fr, result, flags=re.IGNORECASE)
+    return result
+
+
+def _translate_recipe(recipe: dict) -> dict:
+    """Traduit une recette normalisée (titre inchangé, ingrédients et instructions traduits)."""
+    # Traduire les ingrédients
+    try:
+        ingredients = json.loads(recipe.get("ingredients_json", "[]"))
+        for ing in ingredients:
+            if ing.get("name"):
+                ing["name"] = _translate_ingredient_name(ing["name"])
+        recipe["ingredients_json"] = json.dumps(ingredients)
+    except Exception:
+        pass
+
+    # Traduire les instructions
+    if recipe.get("instructions"):
+        recipe["instructions"] = _translate_instructions(recipe["instructions"])
+
+    # Traduire les tags
+    try:
+        tags = json.loads(recipe.get("tags_json", "[]"))
+        recipe["tags_json"] = json.dumps([CATEGORY_FR.get(t, t) for t in tags])
+    except Exception:
+        pass
+
+    return recipe
+
+
+# Mapping des catégories françaises pour l'UI
+RECIPE_CATEGORIES_FR = [
+    {"id": "Beef", "label": "Bœuf"},
+    {"id": "Chicken", "label": "Poulet"},
+    {"id": "Dessert", "label": "Dessert"},
+    {"id": "Lamb", "label": "Agneau"},
+    {"id": "Pasta", "label": "Pâtes"},
+    {"id": "Pork", "label": "Porc"},
+    {"id": "Seafood", "label": "Fruits de mer"},
+    {"id": "Side", "label": "Accompagnement"},
+    {"id": "Starter", "label": "Entrée"},
+    {"id": "Vegetarian", "label": "Végétarien"},
+    {"id": "Vegan", "label": "Végan"},
+    {"id": "Breakfast", "label": "Petit-déjeuner"},
+    {"id": "Miscellaneous", "label": "Divers"},
+]
+
+
+async def get_recipes_by_category(category: str, max_results: int = 12) -> list[dict]:
+    """Récupère des recettes par catégorie TheMealDB, puis les traduit."""
+    recipes = []
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            # filter.php retourne seulement id, title, image — on doit ensuite lookup chaque recette
+            resp = await client.get(MEALDB_FILTER, params={"c": category})
+            if resp.status_code != 200:
+                return []
+            data = resp.json()
+            meals = data.get("meals") or []
+            # Limiter et lookup les détails
+            import random as rnd
+            rnd.shuffle(meals)
+            meals = meals[:max_results]
+            for meal in meals:
+                meal_id = meal.get("idMeal")
+                if not meal_id:
+                    continue
+                detail_resp = await client.get(MEALDB_LOOKUP, params={"i": meal_id})
+                if detail_resp.status_code == 200:
+                    detail_data = detail_resp.json()
+                    detail_meals = detail_data.get("meals") or []
+                    if detail_meals:
+                        recipe = _normalize_mealdb(detail_meals[0])
+                        recipe = _translate_recipe(recipe)
+                        recipes.append(recipe)
+    except Exception as e:
+        logger.warning(f"Erreur recettes par catégorie: {e}")
+    return recipes
 
 
 def load_local_recipes() -> list[dict]:
@@ -42,7 +272,7 @@ async def search_recipes_online(query: str) -> list[dict]:
                 return []
             data = resp.json()
             meals = data.get("meals") or []
-            return [_normalize_mealdb(m) for m in meals]
+            return [_translate_recipe(_normalize_mealdb(m)) for m in meals]
     except Exception as e:
         logger.warning(f"Erreur recherche recettes: {e}")
         return []
@@ -59,7 +289,7 @@ async def get_random_recipes(count: int = 5) -> list[dict]:
                     data = resp.json()
                     meals = data.get("meals") or []
                     for m in meals:
-                        recipes.append(_normalize_mealdb(m))
+                        recipes.append(_translate_recipe(_normalize_mealdb(m)))
     except Exception as e:
         logger.warning(f"Erreur recettes aléatoires: {e}")
     return recipes
