@@ -184,6 +184,18 @@ def generate_demo_data():
                 (name, category, round(random.uniform(1, 5), 1), "unité", dlc.isoformat(), "active")
             )
         
+        # Ajouter quelques aliments avec DLC proches (pour démonstration des alertes)
+        demo_expiring = [
+            ("Yaourt périmé", "produit-laitier", today - timedelta(days=2)),  # Périmé hier
+            ("Lait bientôt périmé", "produit-laitier", today + timedelta(days=1)),  # Périmé demain
+            ("Fromage à consommer", "produit-laitier", today + timedelta(days=2)),  # Dans 2 jours (bientôt périmé)
+        ]
+        for name, category, dlc in demo_expiring:
+            db.execute(
+                "INSERT INTO fridge_items (name, category, quantity, unit, dlc, status) VALUES (?, ?, ?, ?, ?, ?)",
+                (name, category, 1.0, "unité", dlc.isoformat(), "active")
+            )
+        
         # Ajouter recettes sauvegardées
         saved_recipes = [
             ("Steak au beurre", json.dumps([{"name": "Steak", "measure": "200g"}, {"name": "Beurre", "measure": "1 c. à soupe"}]),
@@ -201,12 +213,18 @@ def generate_demo_data():
                 (title, ingredients_json, instructions, servings, prep, cook)
             )
         
-        # Recettes bannies
-        banned_recipes = ["Soupe d'algues", "Escargots rôtis", "Tripes gratinées"]
-        for title in banned_recipes:
+        # Recettes bannies avec images
+        banned_recipes = [
+            ("Soupe d'algues", "🌊"),
+            ("Escargots rôtis", "🐌"),
+            ("Tripes gratinées", "🫒")
+        ]
+        for title, emoji_icon in banned_recipes:
+            # Utiliser un data URL avec l'emoji comme image
+            image_url = f"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='60' font-size='80' text-anchor='middle' dominant-baseline='middle'%3E{emoji_icon}%3C/text%3E%3C/svg%3E"
             db.execute(
-                "INSERT OR IGNORE INTO banned_recipes (title) VALUES (?)",
-                (title,)
+                "INSERT OR IGNORE INTO banned_recipes (title, image_url) VALUES (?, ?)",
+                (title, image_url)
             )
         
         # Menu hebdomadaire (7 jours, 2 repas/jour)

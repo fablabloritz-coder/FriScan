@@ -45,6 +45,9 @@
                     <span class="shopping-item-name">${item.product_name}</span>
                     <span class="shopping-item-qty">${item.quantity} ${item.unit}</span>
                     <span class="shopping-item-source">${sourceLabels[item.source] || item.source}</span>
+                    <button class="btn btn-success btn-sm" onclick="FrigoScan.Shopping.addToFridge(${item.id}, '${item.product_name.replace(/'/g, "\\'")}', ${item.quantity}, '${item.unit.replace(/'/g, "\\'")}')" title="Ajouter au frigo">
+                        <i class="fas fa-door-open"></i>
+                    </button>
                     <button class="btn btn-danger btn-sm" onclick="FrigoScan.Shopping.remove(${item.id})">
                         <i class="fas fa-times"></i>
                     </button>
@@ -81,6 +84,31 @@
         if (data.success) {
             FrigoScan.toast(data.message, 'success');
             loadList();
+        }
+    };
+
+    // Ajouter l'article de la liste courses au frigo et le marquer comme acheté
+    Shopping.addToFridge = async function (shoppingId, product, quantity, unit) {
+        try {
+            // Ajouter au frigo
+            const fridgeData = await FrigoScan.API.post('/api/fridge/', {
+                name: product,
+                category: 'autre',
+                quantity: parseFloat(quantity) || 1,
+                unit: unit,
+                dlc: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // DLC 7 jours par défaut
+            });
+
+            if (fridgeData.success) {
+                // Marquer comme acheté
+                await FrigoScan.API.put(`/api/shopping/${shoppingId}/toggle`);
+                FrigoScan.toast(`"${product}" ajouté au frigo et marqué comme acheté !`, 'success');
+                loadList();
+            } else {
+                FrigoScan.toast('Erreur lors de l\'ajout au frigo.', 'error');
+            }
+        } catch (e) {
+            FrigoScan.toast('Erreur : ' + e.message, 'error');
         }
     };
 
