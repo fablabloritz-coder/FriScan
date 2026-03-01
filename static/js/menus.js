@@ -125,6 +125,7 @@
                     recipeSpan.style.cursor = 'pointer';
                     recipeSpan.title = 'Cliquer pour voir le détail';
                     recipeSpan.addEventListener('click', (e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         showMenuRecipeDetail(entry);
                     });
@@ -182,13 +183,31 @@
 
     // ---- Détail d'une recette du menu ----
     async function showMenuRecipeDetail(entry) {
-        console.log('showMenuRecipeDetail called for entry:', entry);
+        if (!entry) {
+            FrigoScan.toast('Aucune recette sélectionnée.', 'warning');
+            return;
+        }
+        
+        const modal = document.getElementById('recipe-detail-modal');
+        const content = document.getElementById('recipe-detail-content');
+        
+        if (!modal) {
+            console.error('Modal not found in DOM');
+            FrigoScan.toast('Erreur: modal recette non trouvée.', 'error');
+            return;
+        }
+        if (!content) {
+            console.error('Modal content not found in DOM');
+            FrigoScan.toast('Erreur: contenu modal non trouvé.', 'error');
+            return;
+        }
+        
         let recipe = null;
         try {
             const data = await FrigoScan.API.get(`/api/menus/${entry.id}/recipe`);
-            console.log('Recipe API response:', data);
-            if (data && data.success && data.recipe) recipe = data.recipe;
-            else console.warn('Invalid API response:', data);
+            if (data && data.success && data.recipe) {
+                recipe = data.recipe;
+            }
         } catch (e) {
             console.error('Error fetching recipe:', e);
         }
@@ -202,11 +221,6 @@
                 image_url: '',
             };
         }
-
-        const modal = document.getElementById('recipe-detail-modal');
-        const content = document.getElementById('recipe-detail-content');
-        if (!modal) { console.error('Modal not found in DOM'); FrigoScan.toast('Modal non trouvé.', 'error'); return; }
-        if (!content) { console.error('Modal content not found in DOM'); FrigoScan.toast('Contenu modal non trouvé.', 'error'); return; }
 
         let ingredients = [];
         try { ingredients = JSON.parse(recipe.ingredients_json || '[]'); } catch (e) {}
@@ -422,9 +436,68 @@
     async function generateMenu(mode) {
         const nbPersons = parseInt(localStorage.getItem('frigoscan-nb-persons') || '4');
         const modeLabel = mode === 'fridge' ? 'selon le frigo' : 'de zéro';
+        
+        // Créer modal de progression
+        const modal = document.getElementById('menu-generation-progress');
+        if (modal) {
+            modal.classList.remove('hidden');
+            const bar = modal.querySelector('.progress-bar');
+            const text = modal.querySelector('.progress-text');
+            if (bar) bar.style.width = '0%';
+            if (text) text.textContent = '0%';
+        }
+        
         FrigoScan.toast(`Génération du menu ${modeLabel} en cours...`, 'info');
-        const data = await FrigoScan.API.post(`/api/menus/generate?week_start=${currentWeekStart}&servings=${nbPersons}&mode=${mode}`);
-        if (data.success) { FrigoScan.toast(data.message || 'Menu généré !', 'success'); Menus.load(); }
+        
+        try {
+            // Simuler progression (0% -> 20% instantanément)
+            if (modal) {
+                const bar = modal.querySelector('.progress-bar');
+                const text = modal.querySelector('.progress-text');
+                if (bar) bar.style.width = '20%';
+                if (text) text.textContent = '20%';
+            }
+            
+            const data = await FrigoScan.API.post(`/api/menus/generate?week_start=${currentWeekStart}&servings=${nbPersons}&mode=${mode}`);
+            
+            // Progression: 50%
+            if (modal) {
+                const bar = modal.querySelector('.progress-bar');
+                const text = modal.querySelector('.progress-text');
+                if (bar) bar.style.width = '50%';
+                if (text) text.textContent = '50%';
+            }
+            
+            if (data.success) {
+                // Progression: 90%
+                if (modal) {
+                    const bar = modal.querySelector('.progress-bar');
+                    const text = modal.querySelector('.progress-text');
+                    if (bar) bar.style.width = '90%';
+                    if (text) text.textContent = '90%';
+                }
+                
+                await Menus.load();
+                
+                // Progression: 100%
+                if (modal) {
+                    const bar = modal.querySelector('.progress-bar');
+                    const text = modal.querySelector('.progress-text');
+                    if (bar) bar.style.width = '100%';
+                    if (text) text.textContent = '100%';
+                }
+                
+                FrigoScan.toast(data.message || 'Menu généré !', 'success');
+                
+                // Masquer après 1s
+                setTimeout(() => {
+                    if (modal) modal.classList.add('hidden');
+                }, 1000);
+            }
+        } catch (e) {
+            FrigoScan.toast('Erreur lors de la génération.', 'error');
+            if (modal) modal.classList.add('hidden');
+        }
     }
 
     async function clearWeekMenu() {

@@ -285,54 +285,40 @@ def _translate_measure(measure_en: str) -> str:
     return measure_en
 
 
-def _translate_instructions(text: str) -> str:
-    """Traduction basique des instructions anglaises → français (mots-clés courants)."""
-    if not text:
+async def _translate_instructions_full(text: str) -> str:
+    """
+    Traduit les instructions COMPLÈTEMENT de l'anglais vers le français via API.
+    Cela évite les mélanges français/anglais.
+    """
+    if not text or len(text.strip()) < 10:
         return text
-    replacements = [
-        ("Preheat the oven to", "Préchauffer le four à"),
-        ("Preheat oven to", "Préchauffer le four à"),
-        ("Heat the oil", "Chauffer l'huile"),
-        ("Heat oil", "Chauffer l'huile"),
-        ("Heat the butter", "Chauffer le beurre"),
-        ("Add the", "Ajouter les"), ("Add", "Ajouter"),
-        ("Mix well", "Bien mélanger"), ("Mix together", "Mélanger ensemble"),
-        ("Stir in", "Incorporer"), ("Stir well", "Bien remuer"),
-        ("Season with salt and pepper", "Assaisonner de sel et poivre"),
-        ("Season to taste", "Assaisonner à votre goût"),
-        ("Bring to a boil", "Porter à ébullition"),
-        ("Bring to the boil", "Porter à ébullition"),
-        ("Simmer for", "Laisser mijoter pendant"),
-        ("Simmer", "Laisser mijoter"),
-        ("Cook for", "Cuire pendant"), ("Cook until", "Cuire jusqu'à ce que"),
-        ("Bake for", "Cuire au four pendant"), ("Bake", "Cuire au four"),
-        ("Fry", "Faire frire"), ("Fry until", "Faire frire jusqu'à"),
-        ("Sauté", "Faire sauter"), ("Sautee", "Faire sauter"),
-        ("Chop", "Hacher"), ("Dice", "Couper en dés"),
-        ("Slice", "Trancher"), ("Mince", "Émincer"),
-        ("Peel", "Éplucher"), ("Grate", "Râper"),
-        ("Drain", "Égoutter"), ("Rinse", "Rincer"),
-        ("Serve", "Servir"), ("Serve immediately", "Servir immédiatement"),
-        ("Serve hot", "Servir chaud"), ("Serve cold", "Servir froid"),
-        ("Garnish with", "Garnir de"), ("Top with", "Garnir de"),
-        ("Let it rest", "Laisser reposer"), ("Let rest", "Laisser reposer"),
-        ("Cover and", "Couvrir et"), ("Remove from heat", "Retirer du feu"),
-        ("Set aside", "Réserver"), ("Meanwhile", "Pendant ce temps"),
-        ("In a large bowl", "Dans un grand bol"),
-        ("In a large pan", "Dans une grande poêle"),
-        ("In a large pot", "Dans une grande casserole"),
-        ("In a medium bowl", "Dans un bol moyen"),
-        ("In a small bowl", "Dans un petit bol"),
-        ("minutes", "minutes"), ("hours", "heures"),
-        ("until golden", "jusqu'à ce que ce soit doré"),
-        ("until crispy", "jusqu'à ce que ce soit croustillant"),
-        ("until tender", "jusqu'à ce que ce soit tendre"),
-        ("until soft", "jusqu'à ce que ce soit tendre"),
-    ]
-    result = text
-    for en, fr in replacements:
-        result = re.sub(re.escape(en), fr, result, flags=re.IGNORECASE)
-    return result
+    
+    # Ne pas traduire si déjà en français (heuristique)
+    french_words = ['cuire', 'ajouter', 'mélanger', 'chauffer', 'versez', 'pendant', 
+                    'jusqu\'à', 'servir', 'égoutter', 'metter', 'mettre', 'laisser']
+    text_lower = text.lower()
+    french_count = sum(1 for word in french_words if word in text_lower)
+    if french_count > len(french_words) * 0.3:  # Si > 30% de mots français
+        return text
+    
+    try:
+        async with httpx.AsyncClient(timeout=TRANSLATION_TIMEOUT) as client:
+            params = {
+                "q": text,
+                "langpair": "en|fr"
+            }
+            resp = await client.get(TRANSLATION_API, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("responseStatus") == 200:
+                    translated = data.get("responseData", {}).get("translatedText", "")
+                    if translated and translated.strip() and translated != text:
+                        logger.info(f"Instructions traduites avec succès ({len(text)} chars -> {len(translated)} chars)")
+                        return translated
+    except Exception as e:
+        logger.warning(f"Erreur traduction instructions: {e}")
+    
+    return text
 
 
 def _translate_recipe(recipe: dict) -> dict:
@@ -369,7 +355,7 @@ def _translate_recipe(recipe: dict) -> dict:
 async def _translate_recipe_async(recipe: dict) -> dict:
     """
     Traduit une recette de manière asynchrone (titre + ingrédients + instructions).
-    Utilise l'API MyMemory pour traduire le titre.
+    Utilise l'API MyMemory pour traduire le titre et les instructions.
     """
     # Traduire le titre via API
     if recipe.get("title"):
@@ -377,9 +363,29 @@ async def _translate_recipe_async(recipe: dict) -> dict:
         translated_title = await _translate_text_api(original_title, "en", "fr")
         recipe["title"] = translated_title
     
-    # Appliquer les traductions synchrones (ingrédients, instructions, tags)
-    recipe = _translate_recipe(recipe)
-    
+    # Traduire les ingrédients
+    try:
+        ingredients = json.loads(recipe.get("ingredients_json", "[]"))
+        for ing in ingredients:
+            if ing.get("name"):
+                ing["name"] = _translate_ingredient_name(ing["name"])
+            if ing.get("measure"):
+                ing["measure"] = _translate_measure(ing["measure"])
+        recipe["ingredients_json"] = json.dumps(ingredients)
+    except Exception:
+        pass
+
+    # Traduire les instructions COMPLÈTEMENT
+    if recipe.get("instructions"):
+        recipe["instructions"] = await _translate_instructions_full(recipe["instructions"])
+
+    # Traduire les tags
+    try:
+        tags = json.loads(recipe.get("tags_json", "[]"))
+        recipe["tags_json"] = json.dumps([CATEGORY_FR.get(t, t) for t in tags])
+    except Exception:
+        pass
+
     return recipe
 
 
