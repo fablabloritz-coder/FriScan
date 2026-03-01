@@ -51,6 +51,10 @@ async def suggest_recipes(
         diets = json.loads(diets_row["value"]) if diets_row else []
         allergens = json.loads(allergens_row["value"]) if allergens_row else []
 
+        # Exclusions personnalisées
+        custom_excl_row = db.execute("SELECT value FROM settings WHERE key='custom_exclusions'").fetchone()
+        custom_exclusions = json.loads(custom_excl_row["value"]) if custom_excl_row else []
+
         # Récupérer recettes locales (base + fichier)
         db_recipes = rows_to_list(db.execute("SELECT * FROM recipes").fetchall())
         local_recipes = load_local_recipes()
@@ -64,7 +68,7 @@ async def suggest_recipes(
                 all_recipes.extend(online)
 
         # Filtrer par régime
-        all_recipes = filter_by_diet(all_recipes, diets, allergens)
+        all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
 
         # Calculer scores
         scored = []

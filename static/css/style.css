@@ -899,3 +899,247 @@ a { color: var(--primary); text-decoration: none; }
     .view { display: block !important; page-break-inside: avoid; }
     body { background: #fff; color: #000; }
 }
+
+/* ------------------------------------------------------------------ */
+/* Logo dans le header                                                */
+/* ------------------------------------------------------------------ */
+.header-logo {
+    height: 36px;
+    width: auto;
+    margin-right: 6px;
+    vertical-align: middle;
+    border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bouton dictée vocale DLC                                           */
+/* ------------------------------------------------------------------ */
+.dlc-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.dlc-input-row .form-input { flex: 1; }
+
+.btn-voice-dlc {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border: 2px solid var(--primary);
+    background: var(--bg-card);
+    color: var(--primary);
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-voice-dlc:hover { background: var(--primary); color: #fff; }
+.btn-voice-dlc.listening {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+    animation: pulse-voice 1s infinite;
+}
+@keyframes pulse-voice {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(244,67,54,0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(244,67,54,0); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Poids prédéfinis (weight presets)                                   */
+/* ------------------------------------------------------------------ */
+.weight-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+.weight-btn {
+    padding: 8px 14px;
+    border: 2px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: var(--touch-min);
+    text-align: center;
+}
+.weight-btn:hover, .weight-btn:active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+.weight-btn.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bouton retry scan                                                  */
+/* ------------------------------------------------------------------ */
+#btn-retry-scan {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bouton "+" dans grille aliments                                    */
+/* ------------------------------------------------------------------ */
+.food-btn-add {
+    border: 2px dashed var(--primary) !important;
+    background: transparent !important;
+    color: var(--primary) !important;
+    opacity: 0.7;
+    transition: var(--transition);
+}
+.food-btn-add:hover {
+    opacity: 1;
+    background: var(--primary-light) !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Section régime personnalisé                                        */
+/* ------------------------------------------------------------------ */
+.custom-diet-section {
+    margin-top: 12px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-hover);
+}
+.custom-diet-section label:first-child {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* ------------------------------------------------------------------ */
+/* Personnalisation d'icônes                                          */
+/* ------------------------------------------------------------------ */
+.icon-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+.icon-edit-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+.icon-edit-input {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text);
+    font-size: 1.3rem;
+    text-align: center;
+    padding: 0;
+}
+.icon-edit-name {
+    font-size: 0.82rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Ingrédients visuels (pills) dans recettes                          */
+/* ------------------------------------------------------------------ */
+.ingredients-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.ingredient-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+.ingredient-pill.available {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+.ingredient-pill.missing {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+[data-theme="dark"] .ingredient-pill.available {
+    background: #1b3d1e;
+    color: #81c784;
+    border-color: #2d5a30;
+}
+[data-theme="dark"] .ingredient-pill.missing {
+    background: #3e0000;
+    color: #ef9a9a;
+    border-color: #5e0000;
+}
+.btn-add-ingredient {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: var(--danger);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: var(--transition);
+    line-height: 1;
+}
+.btn-add-ingredient:hover { background: var(--danger-dark); transform: scale(1.1); }
+
+.btn-add-all-missing {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Modale overlay (ajout food dialog)                                 */
+/* ------------------------------------------------------------------ */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    animation: fadeIn 0.2s ease;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive pour les nouveaux éléments                              */
+/* ------------------------------------------------------------------ */
+@media (max-width: 600px) {
+    .weight-presets { gap: 4px; }
+    .weight-btn { padding: 6px 10px; font-size: 0.8rem; min-width: 40px; }
+    .icon-edit-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    .ingredients-pills { gap: 4px; }
+    .ingredient-pill { padding: 4px 8px; font-size: 0.75rem; }
+    .header-logo { height: 28px; }
+}

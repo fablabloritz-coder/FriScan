@@ -186,6 +186,9 @@
         ],
     };
 
+    // Exposer FOOD_DB pour la personnalisation d'icônes
+    ManualAdd.FOOD_DB = FOOD_DB;
+
     // Initialisation des listeners
     document.addEventListener('DOMContentLoaded', () => {
         // Clic sur catégorie
@@ -219,6 +222,33 @@
         });
     });
 
+    // Charge les aliments personnalisés depuis localStorage
+    function getCustomFoods(category) {
+        try {
+            const data = JSON.parse(localStorage.getItem('frigoscan-custom-foods') || '{}');
+            return data[category] || [];
+        } catch { return []; }
+    }
+
+    function saveCustomFood(category, food) {
+        try {
+            const data = JSON.parse(localStorage.getItem('frigoscan-custom-foods') || '{}');
+            if (!data[category]) data[category] = [];
+            data[category].push(food);
+            localStorage.setItem('frigoscan-custom-foods', JSON.stringify(data));
+        } catch (e) { console.error('Erreur sauvegarde aliment custom', e); }
+    }
+
+    function removeCustomFood(category, name) {
+        try {
+            const data = JSON.parse(localStorage.getItem('frigoscan-custom-foods') || '{}');
+            if (data[category]) {
+                data[category] = data[category].filter(f => f.name !== name);
+                localStorage.setItem('frigoscan-custom-foods', JSON.stringify(data));
+            }
+        } catch (e) {}
+    }
+
     function showFoodGrid(category) {
         document.getElementById('category-grid').classList.add('hidden');
         document.getElementById('manual-detail-form').classList.add('hidden');
@@ -229,20 +259,104 @@
             category.charAt(0).toUpperCase() + category.slice(1);
 
         const grid = document.getElementById('food-grid');
-        const foods = FOOD_DB[category] || [];
-        grid.innerHTML = foods.map(f => `
-            <button class="food-btn" data-food='${JSON.stringify(f).replace(/'/g, "&apos;")}'>
-                <span class="food-emoji">${f.emoji}</span>
-                <span>${f.name}</span>
-            </button>
-        `).join('');
+        // Charger les icônes personnalisées
+        const customIcons = JSON.parse(localStorage.getItem('frigoscan-custom-icons') || '{}');
+        const baseFoods = FOOD_DB[category] || [];
+        const customFoods = getCustomFoods(category);
+        const allFoods = [...baseFoods, ...customFoods];
 
-        grid.querySelectorAll('.food-btn').forEach(btn => {
+        grid.innerHTML = allFoods.map(f => {
+            const emoji = (customIcons[category] && customIcons[category][f.name]) || f.emoji;
+            return `
+            <button class="food-btn" data-food='${JSON.stringify(f).replace(/'/g, "&apos;")}' data-custom="${customFoods.includes(f) ? '1' : '0'}">
+                <span class="food-emoji">${emoji}</span>
+                <span>${f.name}</span>
+            </button>`;
+        }).join('');
+
+        // Bouton "+" pour ajouter un aliment personnalisé à cette catégorie
+        grid.innerHTML += `
+            <button class="food-btn food-btn-add" id="btn-add-food-to-cat">
+                <span class="food-emoji" style="font-size:2rem;">➕</span>
+                <span>Ajouter</span>
+            </button>`;
+
+        grid.querySelectorAll('.food-btn:not(.food-btn-add)').forEach(btn => {
             btn.addEventListener('click', () => {
                 const food = JSON.parse(btn.dataset.food);
                 showDetailForm(food);
             });
+            // Suppression longue-pression pour les aliments custom
+            if (btn.dataset.custom === '1') {
+                let pressTimer;
+                btn.addEventListener('pointerdown', () => {
+                    pressTimer = setTimeout(async () => {
+                        const food = JSON.parse(btn.dataset.food);
+                        const ok = await FrigoScan.confirm('Supprimer', `Supprimer "${food.name}" de cette catégorie ?`);
+                        if (ok) {
+                            removeCustomFood(category, food.name);
+                            showFoodGrid(category);
+                            FrigoScan.toast(`"${food.name}" supprimé.`, 'success');
+                        }
+                    }, 800);
+                });
+                btn.addEventListener('pointerup', () => clearTimeout(pressTimer));
+                btn.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+            }
         });
+
+        // Handler bouton "+"
+        document.getElementById('btn-add-food-to-cat').addEventListener('click', () => {
+            showAddFoodDialog(category);
+        });
+    }
+
+    function showAddFoodDialog(category) {
+        // Créer une mini-modale de saisie
+        let overlay = document.getElementById('add-food-overlay');
+        if (overlay) overlay.remove();
+
+        overlay = document.createElement('div');
+        overlay.id = 'add-food-overlay';
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="card" style="max-width:380px;margin:auto;margin-top:20vh;padding:24px;">
+                <h3 style="margin-bottom:16px;">➕ Nouvel aliment dans "${category}"</h3>
+                <div class="form-group">
+                    <label class="form-label">Nom</label>
+                    <input type="text" id="new-food-name" class="form-input" placeholder="Ex: Avocat">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Emoji</label>
+                    <input type="text" id="new-food-emoji" class="form-input" placeholder="🥑" maxlength="4" style="width:80px;font-size:1.5rem;text-align:center;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Durée de conservation (jours)</label>
+                    <input type="number" id="new-food-dlc" class="form-input" value="7" min="1">
+                </div>
+                <div style="display:flex;gap:8px;margin-top:16px;">
+                    <button class="btn btn-primary" id="btn-confirm-new-food" style="flex:1">Ajouter</button>
+                    <button class="btn btn-secondary" id="btn-cancel-new-food" style="flex:1">Annuler</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        document.getElementById('btn-cancel-new-food').onclick = () => overlay.remove();
+        overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+        document.getElementById('btn-confirm-new-food').onclick = () => {
+            const name = document.getElementById('new-food-name').value.trim();
+            const emoji = document.getElementById('new-food-emoji').value.trim() || '📦';
+            const dlc_days = parseInt(document.getElementById('new-food-dlc').value) || 7;
+            if (!name) { FrigoScan.toast('Entrez un nom.', 'warning'); return; }
+            saveCustomFood(category, { name, emoji, dlc_days });
+            overlay.remove();
+            showFoodGrid(category);
+            FrigoScan.toast(`"${name}" ajouté à ${category} !`, 'success');
+        };
+
+        document.getElementById('new-food-name').focus();
     }
 
     function showDetailForm(food) {

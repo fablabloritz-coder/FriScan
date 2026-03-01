@@ -90,7 +90,7 @@
         });
     }
 
-    function showRecipeDetail(recipe) {
+    async function showRecipeDetail(recipe) {
         const modal = document.getElementById('recipe-detail-modal');
         const content = document.getElementById('recipe-detail-content');
 
@@ -100,9 +100,44 @@
         let tags = [];
         try { tags = JSON.parse(recipe.tags_json || '[]'); } catch (e) {}
 
+        // Charger le contenu du frigo pour vérifier la disponibilité
+        let fridgeNames = new Set();
+        try {
+            const fridgeData = await FrigoScan.API.get('/api/fridge/');
+            if (fridgeData.success && fridgeData.items) {
+                fridgeData.items.forEach(item => {
+                    const name = (item.name || '').toLowerCase().trim();
+                    fridgeNames.add(name);
+                    name.split(' ').forEach(w => { if (w.length > 2) fridgeNames.add(w); });
+                });
+            }
+        } catch (e) {}
+
+        // Ingrédients basiques qu'on ignore
+        const basicIngredients = ["water", "salt", "pepper", "oil", "eau", "sel", "poivre", "huile"];
+
         const imgHtml = recipe.image_url
             ? `<img src="${recipe.image_url}" alt="${recipe.title}" style="width:100%;max-height:300px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:16px;">`
             : '';
+
+        // Construire les pills d'ingrédients
+        const ingredientPills = ingredients.map(ing => {
+            const ingName = (ing.name || '').toLowerCase().trim();
+            const isBasic = basicIngredients.some(b => ingName.includes(b));
+            let isAvailable = isBasic;
+            if (!isBasic) {
+                for (const fn of fridgeNames) {
+                    if (fn.includes(ingName) || ingName.includes(fn)) { isAvailable = true; break; }
+                }
+            }
+            const cls = isAvailable ? 'ingredient-pill available' : 'ingredient-pill missing';
+            const icon = isAvailable ? '<i class="fas fa-check"></i>' : '<i class="fas fa-cart-plus"></i>';
+            const measureText = ing.measure ? `${ing.measure} ` : '';
+            const addBtn = !isAvailable
+                ? ` <button class="btn-add-ingredient" data-name="${(ing.name || '').replace(/"/g, '&quot;')}" title="Ajouter à la liste de courses">+</button>`
+                : '';
+            return `<span class="${cls}">${icon} ${measureText}${ing.name}${addBtn}</span>`;
+        }).join('');
 
         content.innerHTML = `
             ${imgHtml}
@@ -117,14 +152,18 @@
             ${tags.length ? `<div style="margin-bottom:12px;">${tags.map(t => `<span class="badge" style="margin:2px;">${t}</span>`).join('')}</div>` : ''}
 
             <h3 style="margin-bottom:8px;">Ingrédients</h3>
-            <ul style="margin-bottom:16px;padding-left:20px;">
-                ${ingredients.map(i => `<li>${i.measure ? i.measure + ' ' : ''}${i.name}</li>`).join('')}
-            </ul>
+            <div class="ingredients-pills" style="margin-bottom:16px;">
+                ${ingredientPills}
+            </div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:16px;">
+                <span class="ingredient-pill available" style="font-size:0.7rem;padding:2px 6px;"><i class="fas fa-check"></i> Dans le frigo</span>
+                <span class="ingredient-pill missing" style="font-size:0.7rem;padding:2px 6px;"><i class="fas fa-cart-plus"></i> Manquant</span>
+            </div>
 
             ${recipe.missing_ingredients && recipe.missing_ingredients.length
-                ? `<div class="alert alert-warning">
-                    <strong>Ingrédients manquants :</strong> ${recipe.missing_ingredients.join(', ')}
-                   </div>`
+                ? `<button class="btn btn-warning btn-add-all-missing" style="margin-bottom:16px;">
+                    <i class="fas fa-cart-plus"></i> Ajouter tous les manquants à la liste de courses (${recipe.missing_ingredients.length})
+                   </button>`
                 : ''}
 
             <h3 style="margin-bottom:8px;">Instructions</h3>
@@ -140,6 +179,36 @@
         `;
 
         modal.classList.remove('hidden');
+
+        // Handlers pour ajout individuel aux courses
+        content.querySelectorAll('.btn-add-ingredient').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const name = btn.dataset.name;
+                const res = await FrigoScan.API.post('/api/shopping/', { name, quantity: 1, unit: 'unité', checked: false });
+                if (res.success) {
+                    FrigoScan.toast(`"${name}" ajouté à la liste de courses`, 'success');
+                    btn.parentElement.classList.remove('missing');
+                    btn.parentElement.classList.add('available');
+                    btn.remove();
+                }
+            });
+        });
+
+        // Handler pour ajout de tous les manquants
+        const addAllBtn = content.querySelector('.btn-add-all-missing');
+        if (addAllBtn && recipe.missing_ingredients) {
+            addAllBtn.addEventListener('click', async () => {
+                let added = 0;
+                for (const name of recipe.missing_ingredients) {
+                    const res = await FrigoScan.API.post('/api/shopping/', { name, quantity: 1, unit: 'unité', checked: false });
+                    if (res.success) added++;
+                }
+                FrigoScan.toast(`${added} ingrédient(s) ajouté(s) à la liste de courses`, 'success');
+                addAllBtn.disabled = true;
+                addAllBtn.textContent = '✓ Ajoutés';
+            });
+        }
     }
 
     Recipes.closeDetail = function () {

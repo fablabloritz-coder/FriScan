@@ -72,6 +72,9 @@
         document.getElementById('btn-scan-next').addEventListener('click', resetScanResult);
         document.getElementById('btn-transfer-fridge').addEventListener('click', transferToFridge);
         document.getElementById('btn-clear-cart').addEventListener('click', clearCart);
+        document.getElementById('btn-retry-scan').addEventListener('click', () => {
+            resetScanResult();
+        });
     }
 
     // Caméras
@@ -166,6 +169,7 @@
     Scanner.lookupBarcode = async function (barcode) {
         document.getElementById('scan-error').classList.add('hidden');
         document.getElementById('scan-result').classList.add('hidden');
+        document.getElementById('btn-retry-scan').classList.add('hidden');
 
         const data = await FrigoScan.API.get(`/api/scan/barcode/${encodeURIComponent(barcode)}`);
         if (data.success && data.product) {
@@ -186,6 +190,7 @@
             errDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.message || 'Produit non trouvé.'}
                 <br><small>Vous pouvez l'ajouter manuellement via "Ajout manuel".</small>`;
             errDiv.classList.remove('hidden');
+            document.getElementById('btn-retry-scan').classList.remove('hidden');
         }
     };
 
@@ -198,7 +203,25 @@
         document.getElementById('scan-product-name').textContent = product.name;
         document.getElementById('scan-product-brand').textContent = product.brand || '';
         document.getElementById('scan-product-category').textContent = product.category || '';
-        document.getElementById('scan-qty').value = 1;
+
+        // Quantité & unité : chercher poids depuis nutrition_json ou product_quantity
+        const quantity = product.product_quantity || product.quantity;
+        const unitHint = product.quantity_unit || '';
+        if (quantity && parseFloat(quantity) > 0) {
+            document.getElementById('scan-qty').value = parseFloat(quantity);
+            // Deviner l'unité depuis les infos produit
+            const unitLower = unitHint.toLowerCase();
+            if (unitLower.includes('kg')) document.getElementById('scan-unit').value = 'kg';
+            else if (unitLower.includes('ml')) document.getElementById('scan-unit').value = 'mL';
+            else if (unitLower.includes('l')) document.getElementById('scan-unit').value = 'L';
+            else if (unitLower.includes('g')) document.getElementById('scan-unit').value = 'g';
+            document.getElementById('scan-weight-presets-group').style.display = 'none';
+        } else {
+            document.getElementById('scan-qty').value = 1;
+            document.getElementById('scan-unit').value = 'unité';
+            // Afficher les poids prédéfinis
+            document.getElementById('scan-weight-presets-group').style.display = '';
+        }
 
         // DLC : +7 jours par défaut
         const dlcDate = new Date();
@@ -207,6 +230,14 @@
 
         document.getElementById('scan-result').classList.remove('hidden');
     }
+
+    Scanner.setWeight = function (value, unit) {
+        document.getElementById('scan-qty').value = value;
+        document.getElementById('scan-unit').value = unit;
+        // Highlight le bouton sélectionné
+        document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    };
 
     Scanner.adjustQty = function (delta) {
         const input = document.getElementById('scan-qty');
@@ -232,7 +263,20 @@
     function resetScanResult() {
         document.getElementById('scan-result').classList.add('hidden');
         document.getElementById('scan-error').classList.add('hidden');
+        document.getElementById('btn-retry-scan').classList.add('hidden');
+        document.getElementById('scan-weight-presets-group').style.display = 'none';
         currentProduct = null;
+        lastScannedCode = '';
+        lastScanTime = 0;
+        // Relancer la caméra si on est en mode caméra
+        const cameraMode = document.getElementById('scanner-camera-mode');
+        if (cameraMode && !cameraMode.classList.contains('hidden')) {
+            const select = document.getElementById('scanner-camera-select');
+            startCamera(select.value || undefined);
+        }
+        // Vider le champ code barre manuel
+        const manualInput = document.getElementById('manual-barcode');
+        if (manualInput) manualInput.value = '';
     }
 
     function updateCartDisplay() {

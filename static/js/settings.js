@@ -77,6 +77,18 @@
             { key: 'theme', value: document.documentElement.getAttribute('data-theme') },
         ];
 
+        // Exclusions du régime personnalisé
+        const customSection = document.getElementById('custom-diet-section');
+        if (customSection) {
+            const exclusions = [];
+            customSection.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => exclusions.push(cb.value));
+            const keywords = (document.getElementById('custom-diet-keywords')?.value || '').trim();
+            if (keywords) {
+                keywords.split(',').forEach(k => { const t = k.trim().toLowerCase(); if (t) exclusions.push(t); });
+            }
+            settings.push({ key: 'custom_exclusions', value: JSON.stringify(exclusions) });
+        }
+
         const data = await FrigoScan.API.put('/api/settings/bulk', { settings });
         if (data.success) {
             FrigoScan.toast('Réglages enregistrés !', 'success');
@@ -165,4 +177,106 @@
         inputEl.value = '';
     };
 
-})();
+    // ---- Personnalisation des icônes ----
+    Settings.loadIconCategory = function (category) {
+        const grid = document.getElementById('icon-edit-grid');
+        if (!grid || !category) { if (grid) grid.innerHTML = ''; return; }
+
+        // Récupérer la FOOD_DB depuis ManualAdd
+        const FOOD_DB = FrigoScan.ManualAdd && FrigoScan.ManualAdd.FOOD_DB ? FrigoScan.ManualAdd.FOOD_DB : {};
+        const foods = FOOD_DB[category] || [];
+        const customIcons = JSON.parse(localStorage.getItem('frigoscan-custom-icons') || '{}');
+        const catIcons = customIcons[category] || {};
+
+        grid.innerHTML = foods.map(f => {
+            const currentEmoji = catIcons[f.name] || f.emoji;
+            return `
+                <div class="icon-edit-item">
+                    <input type="text" class="icon-edit-input" data-cat="${category}" data-name="${f.name}" value="${currentEmoji}" maxlength="4">
+                    <span class="icon-edit-name">${f.name}</span>
+                </div>`;
+        }).join('');
+    };
+
+    Settings.saveCustomIcons = function () {
+        const inputs = document.querySelectorAll('#icon-edit-grid .icon-edit-input');
+        const customIcons = JSON.parse(localStorage.getItem('frigoscan-custom-icons') || '{}');
+
+        inputs.forEach(inp => {
+            const cat = inp.dataset.cat;
+            const name = inp.dataset.name;
+            const val = inp.value.trim();
+            if (!customIcons[cat]) customIcons[cat] = {};
+            if (val) customIcons[cat][name] = val;
+        });
+
+        localStorage.setItem('frigoscan-custom-icons', JSON.stringify(customIcons));
+        FrigoScan.toast('Icônes personnalisées enregistrées !', 'success');
+    };
+
+    Settings.resetCustomIcons = function () {
+        localStorage.removeItem('frigoscan-custom-icons');
+        const select = document.getElementById('icon-edit-category');
+        if (select && select.value) Settings.loadIconCategory(select.value);
+        FrigoScan.toast('Icônes réinitialisées.', 'success');
+    };
+
+    // ---- Régime personnalisé ----
+    function initCustomDiet() {
+        const toggle = document.getElementById('diet-custom-toggle');
+        const section = document.getElementById('custom-diet-section');
+        if (!toggle || !section) return;
+
+        toggle.addEventListener('change', () => {
+            section.classList.toggle('hidden', !toggle.checked);
+        });
+
+        // Charger les exclusions custom depuis localStorage
+        const saved = JSON.parse(localStorage.getItem('frigoscan-custom-exclusions') || '[]');
+        section.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = saved.includes(cb.value);
+        });
+
+        const customInput = document.getElementById('custom-diet-keywords');
+        if (customInput) {
+            customInput.value = localStorage.getItem('frigoscan-custom-keywords') || '';
+        }
+    }
+
+    function saveCustomDietExclusions() {
+        const section = document.getElementById('custom-diet-section');
+        if (!section) return;
+
+        const exclusions = [];
+        section.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => exclusions.push(cb.value));
+        localStorage.setItem('frigoscan-custom-exclusions', JSON.stringify(exclusions));
+
+        const customInput = document.getElementById('custom-diet-keywords');
+        if (customInput) {
+            localStorage.setItem('frigoscan-custom-keywords', customInput.value.trim());
+        }
+    }
+
+    // Initialiser le sélecteur de catégorie des icônes
+    function initIconEditor() {
+        const select = document.getElementById('icon-edit-category');
+        if (!select) return;
+
+        const FOOD_DB = FrigoScan.ManualAdd && FrigoScan.ManualAdd.FOOD_DB ? FrigoScan.ManualAdd.FOOD_DB : {};
+        const cats = Object.keys(FOOD_DB);
+        select.innerHTML = '<option value="">— Choisir une catégorie —</option>' +
+            cats.map(c => `<option value="${c}">${c.charAt(0).toUpperCase() + c.slice(1)}</option>`).join('');
+    }
+
+    // Patch saveSettings pour inclure les exclusions custom
+    const originalSaveSettings = saveSettings;
+    saveSettings = async function () {
+        saveCustomDietExclusions();
+        await originalSaveSettings();
+    };
+
+    // Init au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+        initCustomDiet();
+        initIconEditor();
+    });

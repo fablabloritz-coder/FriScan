@@ -19,7 +19,7 @@
             <i class="fas fa-arrow-left"></i>
         </button>
         <h1 id="page-title">
-            <i class="fas fa-snowflake"></i> FrigoScan
+            <img src="/images/logo_frigoscan.png" alt="FrigoScan" class="header-logo"> FrigoScan
         </h1>
         <button id="btn-theme" class="header-btn" aria-label="Basculer le thème">
             <i class="fas fa-moon"></i>
@@ -154,9 +154,35 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="form-group" id="scan-weight-presets-group" style="display:none;">
+                            <label>Poids prédéfini</label>
+                            <div class="weight-presets" id="scan-weight-presets">
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(50,'g')">50g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(100,'g')">100g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(125,'g')">125g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(150,'g')">150g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(200,'g')">200g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(250,'g')">250g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(300,'g')">300g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(500,'g')">500g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(750,'g')">750g</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(1,'kg')">1kg</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(1.5,'kg')">1,5kg</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(2,'kg')">2kg</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(33,'mL')">33cL</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(50,'mL')">50cL</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(1,'L')">1L</button>
+                                <button class="btn btn-sm weight-btn" onclick="FrigoScan.Scanner.setWeight(1.5,'L')">1,5L</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Date limite de consommation</label>
-                            <input type="date" id="scan-dlc" class="form-input">
+                            <div class="dlc-input-row">
+                                <input type="date" id="scan-dlc" class="form-input">
+                                <button type="button" class="btn btn-sm btn-voice-dlc" onclick="FrigoScan.Voice.listenDLC('scan-dlc')" title="Dicter la DLC">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="scan-actions">
                             <button id="btn-add-to-cart" class="btn btn-primary btn-lg">
@@ -185,6 +211,9 @@
 
                 <!-- Message d'erreur scan -->
                 <div id="scan-error" class="alert alert-danger hidden"></div>
+                <button id="btn-retry-scan" class="btn btn-primary hidden" style="margin-top:12px;">
+                    <i class="fas fa-redo"></i> Relancer un scan
+                </button>
             </div>
         </section>
 
@@ -267,7 +296,12 @@
                         </div>
                         <div class="form-group">
                             <label>Date limite de consommation (estimée)</label>
-                            <input type="date" id="manual-dlc" class="form-input">
+                            <div class="dlc-input-row">
+                                <input type="date" id="manual-dlc" class="form-input">
+                                <button type="button" class="btn btn-sm btn-voice-dlc" onclick="FrigoScan.Voice.listenDLC('manual-dlc')" title="Dicter la DLC">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-actions">
                             <button id="btn-manual-add-confirm" class="btn btn-success btn-lg">
@@ -418,10 +452,34 @@
                         <div class="checkbox-group" id="settings-diets">
                             <label class="checkbox-label"><input type="checkbox" value="végétarien"> Végétarien</label>
                             <label class="checkbox-label"><input type="checkbox" value="végan"> Végan</label>
+                            <label class="checkbox-label"><input type="checkbox" value="pesco_végétarien"> Pesco-végétarien</label>
+                            <label class="checkbox-label"><input type="checkbox" value="flexitarien"> Flexitarien</label>
                             <label class="checkbox-label"><input type="checkbox" value="sans_gluten"> Sans gluten</label>
                             <label class="checkbox-label"><input type="checkbox" value="sans_lactose"> Sans lactose</label>
                             <label class="checkbox-label"><input type="checkbox" value="halal"> Halal</label>
                             <label class="checkbox-label"><input type="checkbox" value="casher"> Casher</label>
+                            <label class="checkbox-label"><input type="checkbox" value="régime_personnalisé" id="diet-custom-toggle"> Régime personnalisé</label>
+                        </div>
+                        <div id="custom-diet-section" class="custom-diet-section hidden">
+                            <label>Aliments à exclure (sélection manuelle) :</label>
+                            <div class="checkbox-group" id="settings-custom-exclusions">
+                                <label class="checkbox-label"><input type="checkbox" value="viande_rouge"> Viande rouge</label>
+                                <label class="checkbox-label"><input type="checkbox" value="viande_blanche"> Viande blanche</label>
+                                <label class="checkbox-label"><input type="checkbox" value="porc"> Porc</label>
+                                <label class="checkbox-label"><input type="checkbox" value="charcuterie"> Charcuterie</label>
+                                <label class="checkbox-label"><input type="checkbox" value="poisson"> Poisson</label>
+                                <label class="checkbox-label"><input type="checkbox" value="fruits_de_mer"> Fruits de mer</label>
+                                <label class="checkbox-label"><input type="checkbox" value="oeufs"> Oeufs</label>
+                                <label class="checkbox-label"><input type="checkbox" value="produits_laitiers"> Produits laitiers</label>
+                                <label class="checkbox-label"><input type="checkbox" value="gluten"> Gluten</label>
+                                <label class="checkbox-label"><input type="checkbox" value="alcool"> Alcool</label>
+                                <label class="checkbox-label"><input type="checkbox" value="sucre"> Sucre ajouté</label>
+                                <label class="checkbox-label"><input type="checkbox" value="friture"> Friture</label>
+                            </div>
+                            <div class="form-group" style="margin-top:12px;">
+                                <label class="form-label">Mots-clés supplémentaires (séparés par des virgules) :</label>
+                                <input type="text" id="custom-diet-keywords" class="form-input" placeholder="Ex: tofu, tempeh, seitan">
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -508,6 +566,23 @@
                     </div>
                 </div>
 
+                <!-- Personnalisation icônes ajout manuel -->
+                <div class="settings-group">
+                    <h3><i class="fas fa-palette"></i> Icônes ajout manuel</h3>
+                    <p class="text-muted" style="margin-bottom:12px;">Personnalisez les emojis de chaque aliment dans l'ajout manuel.</p>
+                    <div class="form-group">
+                        <label>Catégorie</label>
+                        <select id="icon-edit-category" class="form-select" onchange="FrigoScan.Settings.loadIconCategory(this.value)"></select>
+                    </div>
+                    <div id="icon-edit-grid" class="icon-edit-grid"></div>
+                    <button class="btn btn-primary" onclick="FrigoScan.Settings.saveCustomIcons()" style="margin-top:8px;">
+                        <i class="fas fa-save"></i> Enregistrer les icônes
+                    </button>
+                    <button class="btn btn-secondary" onclick="FrigoScan.Settings.resetCustomIcons()" style="margin-top:8px;margin-left:8px;">
+                        <i class="fas fa-undo"></i> Réinitialiser
+                    </button>
+                </div>
+
                 <!-- Données -->
                 <div class="settings-group">
                     <h3><i class="fas fa-database"></i> Données</h3>
@@ -570,6 +645,7 @@
     <!-- SCRIPTS -->
     <!-- ================================================================== -->
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/voice.js"></script>
     <script src="/static/js/scanner.js"></script>
     <script src="/static/js/manual-add.js"></script>
     <script src="/static/js/fridge.js"></script>

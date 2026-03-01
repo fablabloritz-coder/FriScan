@@ -139,10 +139,46 @@ def compute_match_score(recipe_ingredients_json: str, fridge_items: list[dict]) 
     return (score, missing)
 
 
-def filter_by_diet(recipes: list[dict], diets: list[str], allergens: list[str]) -> list[dict]:
+def _expand_custom_exclusions(custom_exclusions: list[str]) -> list[str]:
+    """Transforme les catégories d'exclusion en mots-clés concrets."""
+    category_keywords = {
+        "viande_rouge": ["beef", "boeuf", "bœuf", "lamb", "agneau", "veau", "steak", "gibier"],
+        "viande_blanche": ["chicken", "poulet", "dinde", "lapin", "canard"],
+        "porc": ["pork", "porc", "lardon", "lardons", "bacon", "jambon", "saucisson", "saucisse",
+                 "chorizo", "rosette", "andouille", "andouillette", "boudin", "pancetta", "rillettes"],
+        "charcuterie": ["lardon", "lardons", "saucisson", "jambon", "bacon", "chorizo", "rosette",
+                        "rillettes", "pâté", "andouille", "andouillette", "boudin", "salami",
+                        "pancetta", "prosciutto", "merguez"],
+        "poisson": ["fish", "poisson", "saumon", "thon", "cabillaud", "sardine", "truite",
+                     "maquereau", "dorade", "bar", "anchois"],
+        "fruits_de_mer": ["shrimp", "crab", "lobster", "crevette", "crabe", "homard",
+                          "moule", "huître", "coquille", "langoustine", "crustacé"],
+        "oeufs": ["egg", "oeuf", "oeufs"],
+        "produits_laitiers": ["milk", "cream", "cheese", "butter", "lait", "crème", "fromage",
+                              "beurre", "yaourt", "mozzarella", "emmental", "comté", "camembert",
+                              "crème fraîche"],
+        "gluten": ["wheat", "flour", "bread", "pasta", "blé", "farine", "pain", "pâte"],
+        "alcool": ["wine", "vin", "beer", "bière", "alcool", "alcohol", "rhum", "vodka", "whisky"],
+        "sucre": ["sugar", "sucre", "sirop", "caramel", "chocolat"],
+        "friture": ["frit", "frites", "friture", "beignet", "panure"],
+    }
+
+    expanded = set()
+    for excl in custom_exclusions:
+        key = excl.lower().replace(" ", "_")
+        if key in category_keywords:
+            expanded.update(category_keywords[key])
+        else:
+            # Mot-clé libre
+            expanded.add(key)
+    return list(expanded)
+
+
+def filter_by_diet(recipes: list[dict], diets: list[str], allergens: list[str], custom_exclusions: list[str] = None) -> list[dict]:
     """
     Filtre les recettes selon les régimes et allergènes.
     Retourne les recettes compatibles.
+    custom_exclusions : liste de mots-clés supplémentaires pour le régime personnalisé.
     """
     if not diets and not allergens:
         return recipes
@@ -165,27 +201,73 @@ def filter_by_diet(recipes: list[dict], diets: list[str], allergens: list[str]) 
     }
 
     diet_exclude = {
-        "végétarien": ["chicken", "beef", "pork", "lamb", "poulet", "boeuf", "porc", "agneau", "viande", "meat", "fish", "poisson"],
-        "végan": ["chicken", "beef", "pork", "lamb", "poulet", "boeuf", "porc", "agneau", "viande", "meat", "fish", "poisson", "milk", "cream", "cheese", "butter", "egg", "honey", "lait", "crème", "fromage", "beurre", "oeuf", "miel"],
+        "végétarien": [
+            "chicken", "beef", "pork", "lamb", "poulet", "boeuf", "bœuf", "porc",
+            "agneau", "viande", "meat", "fish", "poisson", "lardon", "lardons",
+            "saucisse", "saucisson", "jambon", "bacon", "canard", "dinde", "veau",
+            "lapin", "steak", "merguez", "chorizo", "rosette", "rillettes",
+            "pâté", "gibier", "andouille", "andouillette", "boudin",
+            "pancetta", "prosciutto", "salami",
+        ],
+        "végan": [
+            "chicken", "beef", "pork", "lamb", "poulet", "boeuf", "bœuf", "porc",
+            "agneau", "viande", "meat", "fish", "poisson", "lardon", "lardons",
+            "saucisse", "saucisson", "jambon", "bacon", "canard", "dinde", "veau",
+            "lapin", "steak", "merguez", "chorizo", "rosette", "rillettes",
+            "pâté", "gibier", "andouille", "andouillette", "boudin",
+            "pancetta", "prosciutto", "salami",
+            "milk", "cream", "cheese", "butter", "egg", "honey",
+            "lait", "crème", "fromage", "beurre", "oeuf", "oeufs", "miel",
+            "yaourt", "yogurt", "mozzarella", "emmental", "comté", "camembert",
+            "crème fraîche",
+        ],
+        "pesco_végétarien": [
+            "chicken", "beef", "pork", "lamb", "poulet", "boeuf", "bœuf", "porc",
+            "agneau", "viande", "meat", "lardon", "lardons",
+            "saucisse", "saucisson", "jambon", "bacon", "canard", "dinde", "veau",
+            "lapin", "steak", "merguez", "chorizo", "rosette", "rillettes",
+            "pâté", "gibier", "andouille", "andouillette", "boudin",
+            "pancetta", "prosciutto", "salami",
+        ],
+        "flexitarien": [
+            "beef", "boeuf", "bœuf", "lamb", "agneau", "veau",
+            "steak", "gibier",
+        ],
         "sans_gluten": allergen_keywords.get("gluten", []),
         "sans_lactose": allergen_keywords.get("lactose", []),
-        "halal": ["pork", "porc", "lard", "bacon", "ham", "jambon", "wine", "vin", "alcool", "alcohol", "beer", "bière"],
-        "casher": ["pork", "porc", "shellfish", "crustacé"],
+        "halal": [
+            "pork", "porc", "lard", "lardon", "lardons", "bacon", "ham", "jambon",
+            "saucisson", "rosette", "rillettes", "chorizo", "andouille", "andouillette",
+            "boudin", "pancetta", "prosciutto", "salami",
+            "wine", "vin", "alcool", "alcohol", "beer", "bière",
+        ],
+        "casher": ["pork", "porc", "shellfish", "crustacé", "lardon", "lardons"],
     }
 
     filtered = []
     for recipe in recipes:
         ingredients_str = recipe.get("ingredients_json", "").lower()
+        title_str = recipe.get("title", "").lower()
+        search_str = ingredients_str + " " + title_str
         is_ok = True
 
         # Vérifier régimes
         for diet in diets:
             diet_key = diet.lower().replace(" ", "_")
-            excluded = diet_exclude.get(diet_key, [])
-            for word in excluded:
-                if word in ingredients_str:
-                    is_ok = False
-                    break
+
+            # Régime personnalisé : utiliser les exclusions custom
+            if diet_key == "régime_personnalisé" and custom_exclusions:
+                expanded = _expand_custom_exclusions(custom_exclusions)
+                for word in expanded:
+                    if word.lower() in search_str:
+                        is_ok = False
+                        break
+            else:
+                excluded = diet_exclude.get(diet_key, [])
+                for word in excluded:
+                    if word in search_str:
+                        is_ok = False
+                        break
             if not is_ok:
                 break
 

@@ -96,7 +96,11 @@ async def generate_menu(week_start: str = None, servings: int = 4):
         diets = json.loads(diets_row["value"]) if diets_row else []
         allergens = json.loads(allergens_row["value"]) if allergens_row else []
 
-        all_recipes = filter_by_diet(all_recipes, diets, allergens)
+        # Exclusions personnalisées
+        custom_excl_row = db.execute("SELECT value FROM settings WHERE key='custom_exclusions'").fetchone()
+        custom_exclusions = json.loads(custom_excl_row["value"]) if custom_excl_row else []
+
+        all_recipes = filter_by_diet(all_recipes, diets, allergens, custom_exclusions)
 
         # Scorer les recettes
         for recipe in all_recipes:
