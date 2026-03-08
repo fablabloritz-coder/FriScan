@@ -153,6 +153,39 @@ Accéder à l'application : **http://localhost:8000**
 
 ---
 
+## 🚀 Déploiement rapide sur un serveur Ubuntu avec Docker
+
+### 1. Créer le dossier FrigoScan à la racine
+```bash
+mkdir -p ~/FrigoScan
+```
+
+### 2. Cloner le dépôt GitHub
+```bash
+cd ~
+git clone https://github.com/fablabloritz-coder/FrigoScan.git FrigoScan
+cd FrigoScan
+```
+
+### 3. Lancer l'application avec Docker Compose
+```bash
+docker compose up -d --build
+```
+
+- L'application sera accessible sur : http://IP_SERVEUR:8000
+- Les données sont persistées dans `server/data`.
+
+Pour mettre à jour :
+```bash
+cd ~/FrigoScan
+git pull
+docker compose up -d --build
+```
+
+Pour changer le port, modifie la section `ports` dans `docker-compose.yml`.
+
+---
+
 ## 📡 API
 
 L'application expose une API REST complète :
