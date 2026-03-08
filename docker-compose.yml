@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  frigoscan:
+    build: .
+    container_name: frigoscan
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server/data:/app/server/data
+      - ./static:/app/static
+    environment:
+      - DEBUG=false
+    restart: unless-stopped
