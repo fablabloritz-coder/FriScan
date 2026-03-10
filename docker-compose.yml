@@ -1,13 +1,25 @@
-version: '3.8'
 services:
   frigoscan:
     build: .
     container_name: frigoscan
     ports:
-      - "8000:8000"
+      - "${FRIGOSCAN_PORT:-8000}:8000"
     volumes:
       - ./server/data:/app/server/data
       - ./static:/app/static
-    environment:
-      - DEBUG=false
     restart: unless-stopped
+    stop_grace_period: 20s
+    environment:
+      DEBUG: "false"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://localhost:8000/', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    mem_limit: 512m
